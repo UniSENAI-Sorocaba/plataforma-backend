@@ -1,0 +1,11 @@
+# Perfil exclusivo de desenvolvimento local: habilita Swagger e endpoints sem autenticação.
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+platform:
+  audit:
+    api:
+      enabled: true
