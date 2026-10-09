@@ -1,4 +1,14 @@
 # Perfil exclusivo de desenvolvimento local: habilita Swagger e endpoints sem autenticação.
+spring:
+  jpa:
+    hibernate:
+      # Enquanto o time de banco não publica as migrations, o Hibernate cria as tabelas localmente.
+      # Quando as migrations oficiais existirem, remova esta linha (volta a valer o "validate").
+      ddl-auto: update
+    properties:
+      hibernate:
+        hbm2ddl:
+          create_namespaces: true
 springdoc:
   api-docs:
     enabled: true
