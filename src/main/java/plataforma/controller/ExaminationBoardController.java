@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,6 +23,7 @@ import plataforma.dto.ExaminationBoardResponse;
 import plataforma.service.ExaminationBoardService;
 
 @RestController
+@ConditionalOnProperty(prefix = "platform.crud.api", name = "enabled", havingValue = "true")
 @RequestMapping("/api/v1/boards")
 @Tag(name = "Bancas")
 public class ExaminationBoardController {

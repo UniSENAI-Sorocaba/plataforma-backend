@@ -184,11 +184,14 @@ Os erros seguem o padrão RFC 9457 (Problem Details):
 
 ## Configuração
 
-| Perfil | Uso | Tabelas | Swagger |
-| --- | --- | --- | --- |
-| padrão | produção | só valida (`ddl-auto: validate`) | desligado |
-| `local` | Docker Compose e desenvolvimento | Hibernate cria (`update`) | ligado |
-| `test` | testes automatizados | Hibernate cria e apaga (`create-drop`) | desligado |
+| Perfil | Uso | Tabelas | Endpoints de CRUD | Swagger |
+| --- | --- | --- | --- | --- |
+| padrão | produção | só valida (`ddl-auto: validate`) | desligados | desligado |
+| `local` | Docker Compose e desenvolvimento | Hibernate cria (`update`) | ligados | ligado |
+| `test` | testes automatizados | Hibernate cria e apaga (`create-drop`) | ligados | desligado |
+
+Os endpoints de CRUD são ligados pela propriedade `platform.crud.api.enabled`, e a consulta de
+auditoria por `platform.audit.api.enabled`.
 
 Conexão com o banco por variáveis de ambiente: `DB_URL`, `DB_USERNAME` e `DB_PASSWORD`.
 
@@ -241,8 +244,9 @@ As regras abaixo estão marcadas no código com `TODO BE-0xx`, o ID da task no b
 | BE-014 | `ActivityService` | deferir/indeferir com motivo e total de horas |
 | BE-017 | `CertificateService` | gerar hash/QR verificável e validação pública |
 
-Até BE-004 e BE-010, **os endpoints não exigem login**. Por isso o Swagger e a consulta de auditoria
-só ficam ligados no perfil `local`.
+Até BE-004 e BE-010, **os endpoints não exigem login**. Por isso os CRUDs, o Swagger e a consulta de
+auditoria ficam desligados no perfil padrão (produção). Quando a autenticação existir, remova a
+propriedade `platform.crud.api.enabled` e as anotações `@ConditionalOnProperty` dos controllers.
 
 ## Governança
 

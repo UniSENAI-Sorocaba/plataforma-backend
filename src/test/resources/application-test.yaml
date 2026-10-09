@@ -6,3 +6,7 @@ spring:
       hibernate:
         hbm2ddl:
           create_namespaces: true
+platform:
+  crud:
+    api:
+      enabled: true

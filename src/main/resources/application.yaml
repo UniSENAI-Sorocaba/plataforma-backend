@@ -33,6 +33,11 @@ springdoc:
   swagger-ui:
     enabled: false
 platform:
+  crud:
+    api:
+      # Os endpoints de CRUD ainda não exigem login (BE-004/BE-010): ficam desligados fora dos
+      # perfis local e test até a autenticação existir.
+      enabled: false
   audit:
     api:
       # Leitura de auditoria fica desligada até existir RBAC server-side (BE-010).
