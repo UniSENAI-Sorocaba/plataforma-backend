@@ -21,8 +21,10 @@ class SecretRedactorTest {
                 "{\"password\":\"" + password + "\", senha=" + password + ", Authorization: Bearer "
                         + bearer + ", api_key='" + key + "'}");
 
-        assertThat(safe).doesNotContain(password, bearer, key)
-                .contains("[REDACTED]");
+        assertThat(safe.contains(password)).isFalse();
+        assertThat(safe.contains(bearer)).isFalse();
+        assertThat(safe.contains(key)).isFalse();
+        assertThat(safe.contains("[REDACTED]")).isTrue();
     }
 
     @Test
@@ -34,9 +36,12 @@ class SecretRedactorTest {
                 "refresh_token", token,
                 "details", List.of(Map.of("email", "person@example.test", "cookie", cookieValue))));
 
-        assertThat(safe).containsEntry("status", "active").containsEntry("refresh_token", "[REDACTED]");
-        assertThat(safe.get("details").toString()).doesNotContain(token, cookieValue)
-                .contains("[REDACTED]");
+        assertThat(safe.get("status").equals("active")).isTrue();
+        assertThat(safe.get("refresh_token").equals("[REDACTED]")).isTrue();
+        String safeDetails = safe.get("details").toString();
+        assertThat(safeDetails.contains(token)).isFalse();
+        assertThat(safeDetails.contains(cookieValue)).isFalse();
+        assertThat(safeDetails.contains("[REDACTED]")).isTrue();
     }
 
     @Test
@@ -48,6 +53,7 @@ class SecretRedactorTest {
 
         String safe = new SecretMaskingConverter().convert(event);
 
-        assertThat(safe).doesNotContain(token).contains("[REDACTED]");
+        assertThat(safe.contains(token)).isFalse();
+        assertThat(safe.contains("[REDACTED]")).isTrue();
     }
 }

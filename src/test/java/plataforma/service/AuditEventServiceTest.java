@@ -58,8 +58,9 @@ class AuditEventServiceTest {
                 "auth", "user_account", AuditOperation.INSERT, UUID.randomUUID(), null,
                 null, Map.of("profile", Map.of("email", "aluno@exemplo.test", "password", credential))));
 
-        assertThat(response.newData().toString()).contains("[REDACTED]")
-                .doesNotContain(credential);
+        String responseData = response.newData().toString();
+        assertThat(responseData.contains("[REDACTED]")).isTrue();
+        assertThat(responseData.contains(credential)).isFalse();
     }
 
     @Test

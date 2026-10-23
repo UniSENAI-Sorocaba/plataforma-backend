@@ -22,7 +22,11 @@ class AuditEventMapperTest {
         var entity = mapper.toEntity(request, UUID.randomUUID(), Instant.now());
         var response = mapper.toResponse(entity);
 
-        assertThat(entity.getNewData().toString()).contains("[REDACTED]").doesNotContain(credential);
-        assertThat(response.newData().toString()).contains("[REDACTED]").doesNotContain(credential);
+        String persistedData = entity.getNewData().toString();
+        String responseData = response.newData().toString();
+        assertThat(persistedData.contains("[REDACTED]")).isTrue();
+        assertThat(persistedData.contains(credential)).isFalse();
+        assertThat(responseData.contains("[REDACTED]")).isTrue();
+        assertThat(responseData.contains(credential)).isFalse();
     }
 }
