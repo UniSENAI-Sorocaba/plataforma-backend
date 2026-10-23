@@ -8,7 +8,8 @@ próximas sprints (veja [O que vem nas próximas sprints](#o-que-vem-nas-próxim
 
 ## Como rodar
 
-Requisito: **Docker**.
+Requisito: **Docker**. Antes de iniciar, copie `.env.example` para `.env` e defina `DB_PASSWORD`
+com um valor local exclusivo. O arquivo `.env` é ignorado pelo Git.
 
 ```bash
 docker compose up --build
@@ -18,7 +19,7 @@ Esse comando sobe dois containers:
 
 | Container | Porta | O que é |
 | --- | --- | --- |
-| `postgres` | 5432 | PostgreSQL 16 (usuário `plataforma`, senha `local-development-only`) |
+| `postgres` | 5432 | PostgreSQL 16 (usuário `plataforma`, credencial configurada localmente) |
 | `api` | 8080 | a API, compilada dentro da imagem |
 
 Quando subir, abra o **Swagger**: <http://localhost:8080/swagger-ui.html>.
@@ -195,11 +196,18 @@ auditoria por `platform.audit.api.enabled`.
 
 Conexão com o banco por variáveis de ambiente: `DB_URL`, `DB_USERNAME` e `DB_PASSWORD`.
 
+Os parâmetros de Argon2id podem ser ajustados por `ARGON2_MEMORY_KIB`, `ARGON2_ITERATIONS` e
+`ARGON2_PARALLELISM`. Os valores de partida no `.env.example` são os defaults mínimos da OWASP;
+devem ser tratados como **a calibrar no ambiente alvo** antes de produção. O fluxo de login local
+continua pendente da BE-004.
+
 Para rodar fora do Docker (com o Postgres do compose no ar):
 
 ```bash
-DB_PASSWORD=local-development-only mvn spring-boot:run -Dspring-boot.run.profiles=local
+mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
+
+Defina `DB_PASSWORD` previamente no ambiente local antes de executar o comando.
 
 ## Banco de dados
 
@@ -224,9 +232,17 @@ mvn verify
 | `AuditEventControllerTest` | rotas de auditoria e resposta 404 |
 | `AuditEventServiceTest` | regras do service de auditoria (unitário) |
 | `PlataformaDigitalApplicationTests` | a aplicação sobe |
+| `PasswordHasherTest` | hash Argon2id, sal distinto, verificação, rehash, persistência sem senha e saída de log capturada |
+| `SecretRedactorTest` | sanitização de campos sensíveis e saída de log capturada |
+| `AuditEventMapperTest` | sanitização dos dados do evento antes de persistir e responder |
 
 Os testes de integração sobem um PostgreSQL real com Testcontainers: precisam do **Docker em
 execução**. Sem Docker, eles são pulados.
+
+## Secret scan
+
+O repositório estende as regras padrão do Gitleaks em `.gitleaks.toml`. Para escanear o conteúdo
+atual da árvore de trabalho, execute `gitleaks dir --redact .`.
 
 ## O que vem nas próximas sprints
 
