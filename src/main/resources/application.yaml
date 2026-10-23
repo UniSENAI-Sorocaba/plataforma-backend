@@ -18,6 +18,12 @@ spring:
     web:
       pageable:
         max-page-size: 100
+server:
+  error:
+    include-binding-errors: never
+    include-exception: false
+    include-message: never
+    include-stacktrace: never
 management:
   endpoints:
     web:

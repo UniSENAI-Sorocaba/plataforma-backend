@@ -2,6 +2,7 @@ package plataforma.exception;
 
 import jakarta.validation.ConstraintViolationException;
 import java.util.LinkedHashMap;
+import plataforma.security.SecretRedactor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpHeaders;
@@ -21,14 +22,14 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     ProblemDetail handleNotFound(ResourceNotFoundException ex) {
-        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "O recurso solicitado não foi encontrado.");
         problem.setTitle("Recurso não encontrado");
         return problem;
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     ProblemDetail handleConstraintViolation(ConstraintViolationException ex) {
-        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "A requisição contém dados inválidos.");
         problem.setTitle("Requisição inválida");
         return problem;
     }
@@ -36,7 +37,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(PropertyReferenceException.class)
     ProblemDetail handleInvalidSort(PropertyReferenceException ex) {
         var problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST, "Propriedade de ordenação inválida: " + ex.getPropertyName());
+                HttpStatus.BAD_REQUEST, "A propriedade de ordenação solicitada é inválida.");
         problem.setTitle("Requisição inválida");
         return problem;
     }
@@ -56,7 +57,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         var fields = new LinkedHashMap<String, String>();
         ex.getBindingResult().getFieldErrors()
-                .forEach(error -> fields.putIfAbsent(error.getField(), error.getDefaultMessage()));
+                .forEach(error -> fields.putIfAbsent(SecretRedactor.redactText(error.getField()), "inválido"));
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Um ou mais campos são inválidos.");
         problem.setTitle("Requisição inválida");
         problem.setProperty("fields", fields);
