@@ -1,12 +1,12 @@
 # Ambiente local: PostgreSQL + API. Uso: docker compose up --build
-# Credenciais abaixo são exclusivas de desenvolvimento local.
+# Defina DB_PASSWORD em um arquivo .env local ignorado pelo Git antes de iniciar.
 services:
   postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: plataforma
       POSTGRES_USER: plataforma
-      POSTGRES_PASSWORD: local-development-only
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Configure DB_PASSWORD no arquivo .env local}
     ports:
       - "5432:5432"
     healthcheck:
@@ -23,7 +23,7 @@ services:
       SPRING_PROFILES_ACTIVE: local
       DB_URL: jdbc:postgresql://postgres:5432/plataforma
       DB_USERNAME: plataforma
-      DB_PASSWORD: local-development-only
+      DB_PASSWORD: ${DB_PASSWORD:?Configure DB_PASSWORD no arquivo .env local}
     ports:
       - "8080:8080"
     depends_on:
