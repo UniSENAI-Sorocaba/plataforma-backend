@@ -33,6 +33,15 @@ springdoc:
   swagger-ui:
     enabled: false
 platform:
+  security:
+    password:
+      argon2:
+        # Defaults mínimos OWASP; calibrar no ambiente alvo antes de produção.
+        memory-kib: ${ARGON2_MEMORY_KIB:19456}
+        iterations: ${ARGON2_ITERATIONS:2}
+        parallelism: ${ARGON2_PARALLELISM:1}
+        salt-length: ${ARGON2_SALT_LENGTH:16}
+        hash-length: ${ARGON2_HASH_LENGTH:32}
   crud:
     api:
       # Os endpoints de CRUD ainda não exigem login (BE-004/BE-010): ficam desligados fora dos
