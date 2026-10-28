@@ -22,6 +22,7 @@ public class ImpactRequestFilter extends OncePerRequestFilter {
         String correlation = request.getHeader("X-Correlation-Id");
         if (correlation == null || !correlation.matches("[A-Za-z0-9._-]{1,64}")) correlation = UUID.randomUUID().toString();
         request.setAttribute("impact.correlation", correlation);
+        request.setAttribute("request.correlationId", correlation);
         response.setHeader("X-Correlation-Id", correlation);
         response.setHeader("Cache-Control", "no-store");
         chain.doFilter(request, response);

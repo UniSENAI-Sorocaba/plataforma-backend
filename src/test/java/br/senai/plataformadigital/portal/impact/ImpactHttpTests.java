@@ -254,6 +254,17 @@ class ImpactHttpTests {
     }
 
     @Test
+    void generatedCorrelationIsTheSameInResponseAndCommittedEvent() throws Exception {
+        MvcResult created = mvc.perform(post(ROOT).principal(() -> "synthetic-editor")
+                        .contentType(MediaType.APPLICATION_JSON).content(draft()))
+                .andExpect(status().isCreated()).andReturn();
+        String id = json.readTree(created.getResponse().getContentAsString()).path("id").asText();
+        String correlation = created.getResponse().getHeader("X-Correlation-Id");
+        mvc.perform(editor(get(ROOT + "/{id}/history", id)))
+                .andExpect(jsonPath("$.items[0].correlationId").value(correlation));
+    }
+
+    @Test
     void versionAndHistoryQueriesHaveBoundedConsistentPagination() throws Exception {
         String id = createDraft().path("id").asText();
         approve(id, 1, 1);
