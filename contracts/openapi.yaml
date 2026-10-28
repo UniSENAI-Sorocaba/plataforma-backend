@@ -1,0 +1,135 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: Plataforma Digital — API operacional
+  version: 0.1.0
+  description: >-
+    Contrato local dos endpoints operacionais existentes no bootstrap BE-001.
+    Não define contratos de domínio nem substitui CONTRACT-AUTH-001,
+    CONTRACT-PI-001, CONTRACT-EXT-001 ou CONTRACT-PORTAL-001.
+servers:
+  - url: https://api.example.test
+    description: Endereço sintético; configurar a URL do ambiente no cliente.
+security: []
+tags:
+  - name: Operations
+    description: Saúde e informações técnicas sem detalhes sensíveis.
+paths:
+  /actuator/health:
+    get:
+      operationId: getHealth
+      summary: Consultar a saúde da aplicação
+      description: Retorna status agregado e nomes dos grupos, sem detalhes dos componentes.
+      tags: [Operations]
+      security: []
+      responses:
+        '200':
+          description: Aplicação saudável e grupos de probes disponíveis.
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              examples:
+                up:
+                  value:
+                    status: UP
+                    groups: [liveness, readiness]
+        '503':
+          description: Aplicação indisponível; formato operacional nativo do Actuator.
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              examples:
+                down:
+                  value:
+                    status: DOWN
+                    groups: [liveness, readiness]
+                outOfService:
+                  value:
+                    status: OUT_OF_SERVICE
+                    groups: [liveness, readiness]
+  /actuator/health/liveness:
+    get:
+      operationId: getLiveness
+      summary: Consultar se o processo está vivo
+      description: Probe do Spring Boot Actuator, sem detalhes internos.
+      tags: [Operations]
+      security: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Healthy'
+        '503':
+          $ref: '#/components/responses/Unhealthy'
+  /actuator/health/readiness:
+    get:
+      operationId: getReadiness
+      summary: Consultar se a aplicação aceita tráfego
+      description: Probe do Spring Boot Actuator, sem detalhes internos.
+      tags: [Operations]
+      security: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Healthy'
+        '503':
+          $ref: '#/components/responses/Unhealthy'
+  /actuator/info:
+    get:
+      operationId: getInfo
+      summary: Consultar informações públicas da aplicação
+      description: O bootstrap não publica metadados; a resposta atual é um objeto vazio.
+      tags: [Operations]
+      security: []
+      responses:
+        '200':
+          description: Nenhum metadado público configurado.
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+                additionalProperties: false
+              examples:
+                empty:
+                  value: {}
+components:
+  schemas:
+    Health:
+      type: object
+      description: Status operacional público do Actuator.
+      required: [status]
+      additionalProperties: false
+      properties:
+        groups:
+          type: array
+          description: Nomes públicos dos grupos de saúde, presentes no endpoint agregado.
+          uniqueItems: true
+          items:
+            type: string
+            enum: [liveness, readiness]
+        status:
+          type: string
+          enum: [UP, DOWN, OUT_OF_SERVICE, UNKNOWN]
+  responses:
+    Healthy:
+      description: Aplicação saudável.
+      content:
+        application/vnd.spring-boot.actuator.v3+json:
+          schema:
+            $ref: '#/components/schemas/Health'
+          examples:
+            up:
+              value:
+                status: UP
+    Unhealthy:
+      description: Aplicação indisponível; formato operacional nativo do Actuator.
+      content:
+        application/vnd.spring-boot.actuator.v3+json:
+          schema:
+            $ref: '#/components/schemas/Health'
+          examples:
+            down:
+              value:
+                status: DOWN
+            outOfService:
+              value:
+                status: OUT_OF_SERVICE
