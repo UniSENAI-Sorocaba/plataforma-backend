@@ -41,7 +41,8 @@ class ImpactHttpTests {
         @Bean
         ImpactPermissionProvider fixturePermissions() {
             return (actor, action, id) -> actor.equals("synthetic-editor")
-                    || (actor.equals("synthetic-reader") && action == Impact.Action.READ);
+                    || (actor.equals("synthetic-reader") && action == Impact.Action.READ)
+                    || (id != null && actor.equals("synthetic-scoped:" + id) && action == Impact.Action.READ);
         }
     }
 
@@ -173,6 +174,31 @@ class ImpactHttpTests {
         spoofed.put("approved", true);
         mvc.perform(editor(post(ROOT)).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(spoofed)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void readPermissionDoesNotGrantAnyMutationAndDeniedCommandsDoNotCreateEvents() throws Exception {
+        String id = createDraft().path("id").asText();
+        for (MockHttpServletRequestBuilder mutation : new MockHttpServletRequestBuilder[]{
+                post(ROOT + "/{id}/versions", id).contentType(MediaType.APPLICATION_JSON).content(draft()),
+                post(ROOT + "/{id}/versions/1/approval", id),
+                put(ROOT + "/{id}/publication", id).contentType(MediaType.APPLICATION_JSON).content("{\"version\":1}"),
+                delete(ROOT + "/{id}/publication", id)}) {
+            mvc.perform(mutation.principal(() -> "synthetic-reader").header("If-Match", "\"1\""))
+                    .andExpect(status().isForbidden());
+        }
+        mvc.perform(editor(get(ROOT + "/{id}/history", id))).andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    void backendPermissionProviderReceivesTheResourceAndCannotBeBypassedByChangingItsId() throws Exception {
+        String first = createDraft().path("id").asText();
+        String second = createDraft().path("id").asText();
+        java.security.Principal scoped = () -> "synthetic-scoped:" + first;
+        mvc.perform(get(ROOT + "/{id}/versions", first).principal(scoped)).andExpect(status().isOk());
+        mvc.perform(get(ROOT + "/{id}/versions", second).principal(scoped)
+                        .header("X-Impact-Id", first).param("impactId", first))
+                .andExpect(status().isForbidden());
     }
 
     @Test
