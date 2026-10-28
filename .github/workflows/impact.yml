@@ -1,4 +1,4 @@
-name: Impact publication preparation
+name: Impact publication API
 
 on:
   pull_request:
@@ -22,7 +22,7 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - name: Verify impact preparation and bootstrap
+      - name: Verify impact API, contracts and bootstrap
         run: mvn --batch-mode --no-transfer-progress clean verify
       - name: Record incomplete task status
         if: always()
@@ -36,7 +36,8 @@ jobs:
           path: |
             target/surefire-reports/
             target/site/jacoco/
-            src/test/resources/impact/publication-fixtures.json
+            src/test/resources/impact/draft.json
+            contracts/impact.openapi.json
             docs/compliance/BE-019.md
           if-no-files-found: warn
           retention-days: 14
