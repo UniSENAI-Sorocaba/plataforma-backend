@@ -24,4 +24,9 @@ mvn verify
 
 ## Governança
 
+A preparação técnica da BE-019 está em
+[`docs/impact/README.md`](docs/impact/README.md). A seleção isolada exige
+publicação explícita da versão aprovada e omite itens retirados; ainda não há
+endpoint público, banco ou auditoria de impacto integrados.
+
 Consulte `.governance-baseline` antes de qualquer mudança. A tag declarada ainda precisa ser publicada no repositório de governança e resolver para o SHA registrado; até lá, o gate remoto de spec-compliance permanece uma pendência organizacional.
