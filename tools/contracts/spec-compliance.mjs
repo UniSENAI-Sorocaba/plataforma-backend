@@ -27,9 +27,19 @@ try {
       || !/^[a-f0-9]{40}$/.test(baseline.commit)) {
     throw new Error('Formato inválido da baseline; nenhum valor foi alterado');
   }
+  if (process.env.GITHUB_ACTIONS === 'true' && !process.env.GOVERNANCE_READ_TOKEN?.trim()) {
+    throw new Error('GOVERNANCE_READ_TOKEN não configurado ou indisponível neste run. '
+      + 'O repositório de governança é privado; configure um Actions secret com Contents: read '
+      + 'para UniSENAI-Sorocaba/plataforma-governance. O GITHUB_TOKEN do backend não concede esse acesso.');
+  }
   const refs = git(['ls-remote', '--tags', baseline.repository,
     `refs/tags/${baseline.tag}`, `refs/tags/${baseline.tag}^{}`]);
-  if (refs.status !== 0) throw new Error('Não foi possível resolver a baseline remota');
+  if (refs.status !== 0) {
+    if (refs.error?.code === 'ETIMEDOUT') throw new Error('Tempo limite ao consultar a baseline remota');
+    throw new Error('Não foi possível acessar a baseline remota. Verifique rede e credenciais Git; '
+      + 'no CI, confira validade, acesso ao governance e aprovação organizacional do GOVERNANCE_READ_TOKEN. '
+      + 'A existência da tag ainda não pôde ser verificada.');
+  }
   const lines = refs.stdout.trim().split(/\r?\n/).filter(Boolean).map(line => line.split(/\s+/));
   const sha = lines.find(([, ref]) => ref.endsWith('^{}'))?.[0] ?? lines[0]?.[0];
   if (!sha) failures.push(`Tag oficial ausente: ${baseline.tag}`);

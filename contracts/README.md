@@ -99,9 +99,21 @@ e possuir plano de migração aprovado antes de adaptar o gate.
 Os administradores precisam configurar os jobs `Contracts and producer tests`
 e `Spec compliance` como required checks nas regras de proteção do repositório.
 Criar o workflow, isoladamente, não configura a proteção da branch.
-Se governance for privado, configurar o secret `GOVERNANCE_READ_TOKEN` com
-leitura somente desse repositório. Localmente, as credenciais Git já configuradas
-são reutilizadas; nenhum token é versionado ou incluído nos relatórios.
+Governance é privado. Um administrador precisa configurar o Actions secret
+`GOVERNANCE_READ_TOKEN` no backend (ou disponibilizá-lo via secret da organização),
+com acesso a `UniSENAI-Sorocaba/plataforma-governance` e permissão `Contents: read`.
+Um fine-grained token deve selecionar esse repositório e receber aprovação da
+organização quando exigida. O `GITHUB_TOKEN` automático do backend não concede
+acesso a outro repositório privado. Em PRs de forks, secrets podem não estar
+disponíveis; nesses runs, a validação continua bloqueada.
+
+O job de compliance não persiste a credencial do checkout, para não misturá-la
+com o token de leitura da governança. Secret ausente produz uma mensagem
+explícita e relatório FAIL antes da consulta remota. Falha de acesso não é
+classificada como tag ausente. Depois de configurar o secret, reexecutar o job;
+isso permite consultar a baseline, mas não publica a tag ou os contratos faltantes.
+Localmente, as credenciais Git já configuradas são reutilizadas; nenhum token é
+versionado ou incluído nos relatórios.
 
 ## Pendências para concluir a issue
 
