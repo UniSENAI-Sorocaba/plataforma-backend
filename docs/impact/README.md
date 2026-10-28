@@ -70,6 +70,14 @@ substituído por UUID; essa correlação acompanha os eventos das alterações.
 O servidor não mantém cache de conteúdo publicado. O teste de retirada consulta
 novamente o mesmo endpoint e verifica 404 imediatamente.
 
+A integração com a PR #39 inclui authorization/impact-routes.json com todas as
+operações classificadas e ImpactAuthorizationContribution, que converte ações
+impact:* para a mesma fonte ImpactPermissionProvider já usada nos comandos.
+Não há uma segunda tabela de permissões ou concessão global. Os três tipos
+públicos de contrato Auth são idênticos aos da PR #39, permitindo compilar esta
+branch isoladamente; não foi copiado seu interceptor ou mecanismo de decisão.
+Na integração Git, preservar as duas entradas de auto-configuration (Auth/Portal).
+
 ## Segurança e integração
 
 ImpactAccess obtém o ator de um Principal autenticado pelo servidor; headers de

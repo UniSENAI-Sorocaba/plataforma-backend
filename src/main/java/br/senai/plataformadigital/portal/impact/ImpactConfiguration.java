@@ -33,6 +33,11 @@ public class ImpactConfiguration {
     ImpactPermissionProvider denyImpactPermissions() { return (actor, action, id) -> false; }
 
     @Bean
+    ImpactAuthorizationContribution impactAuthorizationContribution(ImpactPermissionProvider permissions) {
+        return new ImpactAuthorizationContribution(permissions);
+    }
+
+    @Bean
     @ConditionalOnMissingBean(ImpactAccess.class)
     ImpactAccess impactAccess(HttpServletRequest request, ImpactPermissionProvider permissions) {
         return new ImpactAccess() {

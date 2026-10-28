@@ -1,0 +1,63 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/v1/impacts",
+    "publicAccess": false,
+    "action": "impact:CREATE",
+    "resource": "impacts"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/impacts/{id}/versions",
+    "publicAccess": false,
+    "action": "impact:REVISE",
+    "resourceVariable": "id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/impacts/{id}/versions",
+    "publicAccess": false,
+    "action": "impact:READ",
+    "resourceVariable": "id"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/impacts/{id}/versions/{version}/approval",
+    "publicAccess": false,
+    "action": "impact:APPROVE",
+    "resourceVariable": "id"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/impacts/{id}/publication",
+    "publicAccess": false,
+    "action": "impact:PUBLISH",
+    "resourceVariable": "id"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/impacts/{id}/publication",
+    "publicAccess": false,
+    "action": "impact:WITHDRAW",
+    "resourceVariable": "id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/impacts/{id}",
+    "publicAccess": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/impacts/{id}/versions/{version}/provenance",
+    "publicAccess": false,
+    "action": "impact:AUDIT",
+    "resourceVariable": "id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/impacts/{id}/history",
+    "publicAccess": false,
+    "action": "impact:AUDIT",
+    "resourceVariable": "id"
+  }
+]
