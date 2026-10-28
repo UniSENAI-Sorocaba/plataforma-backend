@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -96,8 +99,14 @@ class OperationalContractTests {
 
     @Test
     void applicationControllersCannotIntroduceUndocumentedOperations() throws IOException {
-        JsonNode contract = new ObjectMapper(new YAMLFactory())
-                .readTree(Path.of("contracts/openapi.yaml").toFile());
+        List<JsonNode> contracts = new ArrayList<>();
+        ObjectMapper parser = new ObjectMapper(new YAMLFactory());
+        try (var files = Files.walk(Path.of("contracts"))) {
+            for (Path source : files.filter(Files::isRegularFile).filter(path ->
+                    path.getFileName().toString().matches("(?i)(openapi\\.(json|ya?ml)|.+\\.openapi\\.(json|ya?ml))")).toList()) {
+                contracts.add(parser.readTree(source.toFile()));
+            }
+        }
         requestMappingHandlerMapping.getHandlerMethods().forEach((mapping, handler) -> {
             if (!handler.getBeanType().getPackageName().startsWith("br.senai.plataformadigital")) {
                 return;
@@ -106,8 +115,9 @@ class OperationalContractTests {
                     "Controller deve declarar os métodos HTTP suportados");
             for (String path : mapping.getPatternValues()) {
                 for (RequestMethod method : mapping.getMethodsCondition().getMethods()) {
-                    assertTrue(contract.path("paths").path(path).has(method.name().toLowerCase(java.util.Locale.ROOT)),
-                            () -> "Operação implementada sem contrato: " + method + " " + path);
+                    long declarations = contracts.stream().filter(contract -> contract.path("paths").path(path)
+                            .has(method.name().toLowerCase(java.util.Locale.ROOT))).count();
+                    assertEquals(1, declarations, () -> "Operação sem contrato único: " + method + " " + path);
                 }
             }
         });

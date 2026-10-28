@@ -4,8 +4,8 @@
   "type": "module",
   "engines": { "node": ">=24.14.0 <25" },
   "scripts": {
-    "contracts:lint": "redocly lint contracts/openapi.yaml --max-problems 100",
-    "contracts:bundle": "redocly bundle contracts/openapi.yaml --output target/contracts/openapi.json",
+    "contracts:lint": "node tools/contracts/run-cli.mjs lint",
+    "contracts:bundle": "node tools/contracts/run-cli.mjs bundle",
     "contracts:test": "node --test tools/contracts/*.test.mjs",
     "contracts:verify": "npm run contracts:lint && npm run contracts:bundle && npm run contracts:test",
     "contracts:mock": "node tools/contracts/mock.mjs",

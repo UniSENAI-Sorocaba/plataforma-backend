@@ -31,6 +31,14 @@ inventado ou publicado como norma por esta implementação.
 
 ## Verificação local
 
+A descoberta é automática: roots `openapi.yaml`, `openapi.yml`, `openapi.json`
+e `*.openapi.json/yaml/yml` sob contracts/. Componentes e fixtures comuns não
+são tratados como APIs. Lint e bundle processam todos os roots e geram
+target/contracts/catalog.json. O teste de rotas Spring também considera todos
+os roots, exigindo uma declaração única para cada operação da aplicação.
+O catálogo e as ferramentas foram exercitados com o contrato de impacto da PR #40,
+sem copiar esse contrato de domínio para esta branch.
+
 Requisitos: Java 21, Maven 3.9+, Node.js 24.14+ da linha 24, npm, Git e `tar`.
 As dependências npm são exclusivas de desenvolvimento, fixadas no lockfile e
 instaladas sem scripts de terceiros. `oasdiff` 1.34.1 é baixado do release
@@ -64,6 +72,22 @@ para detectar operações futuras implementadas sem documentação.
 
 ## Mock consumível
 
+O mock aceita templates de path, valida path/query/headers/body pelos schemas,
+rejeita parâmetros fora dos limites e pode consumir qualquer bundle do catálogo:
+
+```bash
+npm run contracts:mock -- target/contracts/impact.openapi.json
+```
+
+tools/contracts/fixtures/protected.openapi.json é somente um contrato sintético
+de teste para paginação, erros RFC 9457, correlação e operações protegidas.
+O mock exige a presença sintática das credenciais declaradas para selecionar
+exemplos protegidos e retorna o exemplo 401 se ausentes. Não valida assinatura,
+papéis ou claims de JWT; Prefer: code=403 seleciona um cenário, não executa RBAC.
+Body inválido retorna 400 e media type não declarado retorna 415. O limite de
+body do mock é 64 KiB; essas respostas são diagnósticos do mock, não regras novas
+de domínio. Evidência adicional: target/contracts/protected-responses.json.
+
 ```bash
 npm run contracts:bundle
 npm run contracts:mock
@@ -95,6 +119,13 @@ de um contrato existente falha. `oasdiff --fail-on WARN` bloqueia mudanças
 potencialmente incompatíveis e incompatíveis. Não há flag de bypass por simples
 alteração de `info.version`: uma nova versão deve preservar o contrato anterior
 e possuir plano de migração aprovado antes de adaptar o gate.
+
+A comparação inventaria a união dos roots na base e no candidato: excluir um
+segundo arquivo não pode ocultar sua remoção. Todos os arquivos de apoio são
+extraídos do commit imutável para resolver referências relativas da base. Cada
+root produz seu resultado em breaking.json, incluindo initial/removed/compared.
+Há regressão específica para um segundo contrato quebrado/removido e base Git
+inexistente. Ciclos de referências de objetos OpenAPI também falham explicitamente.
 
 Os administradores precisam configurar os jobs `Contracts and producer tests`
 e `Spec compliance` como required checks nas regras de proteção do repositório.

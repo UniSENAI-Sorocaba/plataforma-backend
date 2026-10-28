@@ -4,17 +4,19 @@ import addFormats from 'ajv-formats';
 
 export const methods = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace'];
 
-export function resolve(document, value) {
+export function resolve(document, value, seen = new Set()) {
   if (!value?.$ref) return value;
   assert.ok(value.$ref.startsWith('#/'), 'O bundle deve conter somente referências locais');
+  assert.ok(!seen.has(value.$ref), `Referência circular de objeto OpenAPI: ${value.$ref}`);
+  seen.add(value.$ref);
   const target = value.$ref.slice(2).split('/').reduce((node, key) =>
     node?.[key.replaceAll('~1', '/').replaceAll('~0', '~')], document);
   assert.ok(target, `Referência não resolvida: ${value.$ref}`);
-  return resolve(document, target);
+  return resolve(document, target, seen);
 }
 
-export function validator(document, schema) {
-  const ajv = new Ajv2020({ strict: false, allErrors: true });
+export function validator(document, schema, options = {}) {
+  const ajv = new Ajv2020({ strict: false, allErrors: true, ...options });
   addFormats(ajv);
   // Keep JSON Schema references intact: siblings of $ref are meaningful in 3.1.
   return ajv.compile({ ...schema, components: document.components ?? {} });

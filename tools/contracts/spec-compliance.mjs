@@ -9,6 +9,7 @@ const requiredContracts = ['CONTRACT-AUTH-001', 'CONTRACT-PI-001', 'CONTRACT-EXT
 const failures = [];
 const warnings = ['Revisão semântica e aprovação humana da BE-003 continuam obrigatórias.'];
 const evidence = ['target/contracts/openapi.json', 'target/contracts/mock-responses.json',
+  'target/contracts/catalog.json', 'target/contracts/protected-responses.json',
   'target/contracts/breaking-removedEndpoint.json', 'target/contracts/breaking-requiredInput.json',
   'target/contracts/breaking-changedType.json', 'target/contracts/breaking.json'];
 const environment = { ...process.env, GIT_TERMINAL_PROMPT: '0' };
