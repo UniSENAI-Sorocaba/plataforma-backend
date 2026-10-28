@@ -48,6 +48,7 @@
             <configuration>
               <includes>
                 <include>br/senai/plataformadigital/auth/api/authorization/**</include>
+                <include>br/senai/plataformadigital/auth/web/**</include>
               </includes>
               <rules>
                 <rule>

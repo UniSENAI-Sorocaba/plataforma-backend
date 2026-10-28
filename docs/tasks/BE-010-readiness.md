@@ -62,10 +62,11 @@ cliente, e impedir que novas rotas protegidas fiquem fora da matriz.
 
 ## Implementado nesta preparação
 
-Foi adicionada uma API de autorização com portas para identidade autenticada e
-política, decisões explícitas, testes unitários e harness HTTP sintético,
-cobertura crítica e workflow técnico. Consulte `../authorization/README.md`.
-Não há integração com JWT, banco, matriz institucional ou endpoints de produção.
+Foi adicionada a autorização HTTP com interceptor real, catálogo explícito de
+rotas, gate de cobertura no startup, Principal do servidor, políticas substituíveis,
+erros RFC 9457, métricas e auditoria por porta. Consulte `../authorization/README.md`.
+JWT/banco/matriz institucional permanecem nas dependências externas; não existem
+permissões institucionais inventadas. O harness inicial não é mais a única evidência.
 
 `mvn verify` valida a preparação e o bootstrap; os resultados estão em
 `target/surefire-reports/` e `target/site/jacoco/`. O relatório
