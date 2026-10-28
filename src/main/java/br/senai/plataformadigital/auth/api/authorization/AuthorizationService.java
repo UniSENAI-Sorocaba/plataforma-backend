@@ -5,7 +5,8 @@ import java.util.Optional;
 
 /**
  * Orquestra identidade confiável e política explícita, sem concessão implícita.
- * Não é bean automático e não instala filtros nem altera endpoints existentes.
+ * A integração HTTP é registrada por AuthorizationConfiguration; a política
+ * de permissões permanece uma porta substituível, com negação por padrão.
  */
 public final class AuthorizationService {
     private final AuthenticatedSubjectProvider subjects;
@@ -17,20 +18,27 @@ public final class AuthorizationService {
     }
 
     public AuthorizationDecision authorize(AuthorizationRequest request) {
+        return evaluate(request).decision();
+    }
+
+    public record Evaluation(AuthorizationDecision decision, Optional<AuthenticatedSubject> subject) { }
+
+    public Evaluation evaluate(AuthorizationRequest request) {
         Objects.requireNonNull(request, "Requisição de autorização obrigatória");
+        Optional<AuthenticatedSubject> subject = Optional.empty();
         try {
-            Optional<AuthenticatedSubject> subject = subjects.currentSubject();
+            subject = subjects.currentSubject();
             if (subject == null) {
-                return AuthorizationDecision.UNAVAILABLE;
+                return new Evaluation(AuthorizationDecision.UNAVAILABLE, Optional.empty());
             }
             if (subject.isEmpty()) {
-                return AuthorizationDecision.UNAUTHENTICATED;
+                return new Evaluation(AuthorizationDecision.UNAUTHENTICATED, subject);
             }
-            return policy.permits(subject.orElseThrow(), request)
-                    ? AuthorizationDecision.ALLOWED : AuthorizationDecision.DENIED;
+            return new Evaluation(policy.permits(subject.orElseThrow(), request)
+                    ? AuthorizationDecision.ALLOWED : AuthorizationDecision.DENIED, subject);
         } catch (RuntimeException unavailable) {
             // Nunca converter falha da fonte em concessão ou expor sua mensagem ao consumidor.
-            return AuthorizationDecision.UNAVAILABLE;
+            return new Evaluation(AuthorizationDecision.UNAVAILABLE, subject);
         }
     }
 }

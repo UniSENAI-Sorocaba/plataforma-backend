@@ -26,7 +26,7 @@ class PlataformaDigitalApplicationTests {
 
     @Test
     void authorizationPreparationDoesNotActivatePoliciesOrHarnessRoutes() throws IOException {
-        assertTrue(context.getBeansOfType(AuthorizationService.class).isEmpty());
+        assertTrue(context.getBeansOfType(AuthorizationService.class).size() == 1);
         TreeSet<String> inventory = new TreeSet<>();
         context.getBeansOfType(AbstractHandlerMethodMapping.class).values().forEach(handlerMapping ->
                 handlerMapping.getHandlerMethods().keySet().forEach(mapping -> {
@@ -44,5 +44,7 @@ class PlataformaDigitalApplicationTests {
         Path output = Path.of("target/authorization/route-inventory.json");
         Files.createDirectories(output.getParent());
         context.getBean(ObjectMapper.class).writeValue(output.toFile(), inventory);
+        context.getBean(ObjectMapper.class).writeValue(Path.of("target/authorization/route-matrix.json").toFile(),
+                context.getBean(br.senai.plataformadigital.auth.web.AuthorizationRoutes.class).definitions());
     }
 }
