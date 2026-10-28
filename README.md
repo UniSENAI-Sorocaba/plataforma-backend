@@ -24,4 +24,10 @@ mvn verify
 
 ## Governança
 
+A implementação da BE-019 está em [`docs/impact/README.md`](docs/impact/README.md):
+rascunhos, versões, aprovação/publicação, retirada, consulta pública e origem
+restrita. O ciclo completo pode ser verificado com `mvn clean verify`.
+O perfil `impact-local` usa armazenamento temporário; produção exige os adapters
+de banco, identidade e permissões das tasks relacionadas.
+
 Consulte `.governance-baseline` antes de qualquer mudança. A tag declarada ainda precisa ser publicada no repositório de governança e resolver para o SHA registrado; até lá, o gate remoto de spec-compliance permanece uma pendência organizacional.

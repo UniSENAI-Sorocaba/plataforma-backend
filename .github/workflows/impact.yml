@@ -1,0 +1,43 @@
+name: Impact publication API
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  impact-tests:
+    name: Impact tests and coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Verify impact API, contracts and bootstrap
+        run: mvn --batch-mode --no-transfer-progress clean verify
+      - name: Record incomplete task status
+        if: always()
+        shell: bash
+        run: cat docs/compliance/BE-019.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve test, fixtures, coverage and compliance evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: impact-evidence
+          path: |
+            target/surefire-reports/
+            target/site/jacoco/
+            src/test/resources/impact/draft.json
+            contracts/impact.openapi.json
+            docs/compliance/BE-019.md
+          if-no-files-found: warn
+          retention-days: 14
