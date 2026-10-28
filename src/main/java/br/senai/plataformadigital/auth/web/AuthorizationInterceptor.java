@@ -35,8 +35,10 @@ public final class AuthorizationInterceptor implements HandlerInterceptor {
         String path = (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
         AuthorizationRoutes.Rule rule = routes.find(request.getMethod(), path);
         if (rule != null && rule.publicAccess()) return true;
-        String correlation = request.getHeader("X-Correlation-Id");
+        Object established = request.getAttribute("request.correlationId");
+        String correlation = established instanceof String value ? value : request.getHeader("X-Correlation-Id");
         if (correlation == null || !correlation.matches("[A-Za-z0-9._-]{1,64}")) correlation = UUID.randomUUID().toString();
+        request.setAttribute("request.correlationId", correlation);
         response.setHeader("X-Correlation-Id", correlation);
         response.setHeader("Cache-Control", "no-store");
         AuthorizationDecision decision;

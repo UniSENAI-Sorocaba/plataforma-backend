@@ -114,4 +114,11 @@ class AuthorizationRuntimeTests {
                 .andExpect(status().isUnauthorized());
         assertNotEquals("invalid private value", events.getLast().correlationId());
     }
+
+    @Test void existingServerCorrelationIsReusedAcrossMiddlewareAndAudit() throws Exception {
+        mvc.perform(get("/__authorization/scopes/scope-a/records/record-a").principal(() -> "synthetic-reader")
+                        .requestAttr("request.correlationId", "server-correlation").header("X-Correlation-Id", "client-value"))
+                .andExpect(status().isOk()).andExpect(header().string("X-Correlation-Id", "server-correlation"));
+        assertEquals("server-correlation", events.getFirst().correlationId());
+    }
 }
