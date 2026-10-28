@@ -24,4 +24,9 @@ mvn verify
 
 ## Governança
 
+A autorização HTTP da BE-010 está documentada em
+[`docs/authorization/README.md`](docs/authorization/README.md). Inclui negação
+por padrão, catálogo obrigatório de rotas, 401/403/503 e testes do interceptor.
+A política institucional depende da matriz aprovada, BE-004 e DB-006.
+
 Consulte `.governance-baseline` antes de qualquer mudança. A tag declarada ainda precisa ser publicada no repositório de governança e resolver para o SHA registrado; até lá, o gate remoto de spec-compliance permanece uma pendência organizacional.
