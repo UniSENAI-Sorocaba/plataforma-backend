@@ -57,6 +57,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     private ProblemDetail problem(HttpStatusCode status, String code, String message, WebRequest request) { return problem(status, code, message, request instanceof ServletWebRequest servlet ? servlet.getRequest() : null); }
     private ProblemDetail problem(HttpStatusCode status, String code, String message, HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, message);
+        problem.setTitle(title(status));
         problem.setType(URI.create("https://errors.plataforma.senai.br/" + code.toLowerCase()));
         problem.setProperty("code", code);
         problem.setProperty("message", message);
@@ -65,4 +66,5 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     }
     private String code(HttpStatusCode status) { return switch (status.value()) { case 404 -> "NOT_FOUND"; case 405 -> "METHOD_NOT_ALLOWED"; case 415 -> "UNSUPPORTED_MEDIA_TYPE"; default -> "REQUEST_ERROR"; }; }
     private String message(HttpStatusCode status) { return switch (status.value()) { case 404 -> "Resource not found"; case 405 -> "HTTP method is not allowed for this resource"; case 415 -> "Content type is not supported"; default -> "Request could not be processed"; }; }
+    private String title(HttpStatusCode status) { return switch (status.value()) { case 400 -> "Requisição inválida"; case 401 -> "Não autenticado"; case 403 -> "Acesso negado"; case 404 -> "Recurso não encontrado"; case 405 -> "Método não permitido"; case 409 -> "Conflito"; case 415 -> "Tipo de conteúdo não suportado"; default -> "Erro na requisição"; }; }
 }
