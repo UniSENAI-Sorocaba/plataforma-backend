@@ -45,6 +45,21 @@ class SecretRedactorTest {
     }
 
     @Test
+    void redactsCpfAndOmitsStructuredExceptionPayloads() {
+        String exceptionPayload = "fictional exception details";
+        var safe = SecretRedactor.redactMap(Map.of(
+                "cpf", "123.456.789-09",
+                "exceptionMessage", exceptionPayload,
+                "payload", new IllegalStateException(exceptionPayload),
+                "nested", List.of(Map.of("stack_trace", "trace " + exceptionPayload))));
+
+        assertThat(safe.get("cpf")).isEqualTo("[REDACTED]");
+        assertThat(safe.get("exceptionMessage")).isEqualTo("[exception details omitted]");
+        assertThat(safe.get("payload")).isEqualTo("[exception details omitted]");
+        assertThat(safe.get("nested").toString()).contains("[exception details omitted]").doesNotContain(exceptionPayload);
+    }
+
+    @Test
     void logConverterRedactsFormattedMessageAndThrowable() {
         String token = UUID.randomUUID().toString();
         var event = new LoggingEvent();

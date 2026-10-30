@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 /** Central sanitizer for known secret-bearing fields in API errors and telemetry payloads. */
 public final class SecretRedactor {
 
+    private static final String EXCEPTION_DETAILS_OMITTED = "[exception details omitted]";
     private static final String SECRET_KEYS = "password|senha|access[_-]?token|refresh[_-]?token|token|"
             + "authorization|secret|api[_-]?key|set-cookie|cookie";
     private static final Pattern KEY_PREFIX = Pattern.compile(
@@ -135,16 +136,26 @@ public final class SecretRedactor {
             return null;
         }
         var result = new LinkedHashMap<String, Object>();
-        values.forEach((key, value) -> result.put(key, isSecretKey(key) ? "[REDACTED]" : redactValue(value)));
+        values.forEach((key, value) -> result.put(key, safeStructuredValue(key, value)));
         return result;
     }
 
+    private static Object safeStructuredValue(String key, Object value) {
+        if (isExceptionKey(key)) {
+            return EXCEPTION_DETAILS_OMITTED;
+        }
+        return isSecretKey(key) ? "[REDACTED]" : redactValue(value);
+    }
+
     private static Object redactValue(Object value) {
+        if (value instanceof Throwable) {
+            return EXCEPTION_DETAILS_OMITTED;
+        }
         if (value instanceof Map<?, ?> map) {
             var nested = new LinkedHashMap<String, Object>();
             map.forEach((key, nestedValue) -> {
                 String name = String.valueOf(key);
-                nested.put(name, isSecretKey(name) ? "[REDACTED]" : redactValue(nestedValue));
+                nested.put(name, safeStructuredValue(name, nestedValue));
             });
             return nested;
         }
@@ -167,6 +178,17 @@ public final class SecretRedactor {
         return SECRET_KEY_NAMES.contains(normalized) || normalized.contains("password")
                 || normalized.contains("senha") || normalized.endsWith("token")
                 || normalized.contains("secret") || normalized.contains("apikey")
-                || normalized.contains("credentialhash");
+                || normalized.contains("credentialhash") || normalized.contains("cpf")
+                || normalized.contains("taxid") || normalized.contains("document");
+    }
+
+    private static boolean isExceptionKey(String key) {
+        if (key == null) {
+            return false;
+        }
+        String normalized = key.toLowerCase(Locale.ROOT).replaceAll("[_-]", "");
+        return normalized.contains("exception") || normalized.contains("stacktrace")
+                || normalized.contains("throwable") || normalized.equals("cause")
+                || normalized.startsWith("error") || normalized.startsWith("failure");
     }
 }
