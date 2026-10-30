@@ -18,6 +18,11 @@ spring:
     web:
       pageable:
         max-page-size: 100
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
 server:
   error:
     include-binding-errors: never
@@ -33,6 +38,13 @@ management:
     health:
       probes:
         enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+logging:
+  structured:
+    format:
+      console: logstash
 springdoc:
   api-docs:
     enabled: false
