@@ -20,7 +20,9 @@ class SecretMetricTagFilterTest {
                 .withUserConfiguration(SecretMetricTagFilter.class)
                 .run(context -> {
                     assertThat(context).hasNotFailed();
-                    assertTagsAreSanitized(context.getBean(MeterRegistry.class));
+                    MeterRegistry registry = context.getBean(MeterRegistry.class);
+                    assertTagsAreSanitized(registry);
+                    assertSensitiveMetricNamesAreRejected(registry);
                 });
     }
 
@@ -30,7 +32,8 @@ class SecretMetricTagFilterTest {
                 "password", "fictional-password",
                 "cpf", "123.456.789-09",
                 "account", "12345678909",
-                "request", "token=sample-value");
+                "request", "token=sample-value",
+                "exceptionMessage", "fictional exception message");
 
         assertThat(counter.getId().getTags())
                 .extracting(Tag::getKey)
@@ -38,5 +41,13 @@ class SecretMetricTagFilterTest {
         assertThat(counter.getId().getTag("route")).isEqualTo("/api/items/{id}");
         assertThat(counter.getId().getTag("account")).isEqualTo("[REDACTED]");
         assertThat(counter.getId().getTag("request")).isEqualTo("token=[REDACTED]");
+    }
+
+    private static void assertSensitiveMetricNamesAreRejected(MeterRegistry registry) {
+        registry.counter("auth.password.attempts");
+        registry.counter("login.12345678909");
+
+        assertThat(registry.find("auth.password.attempts").counter()).isNull();
+        assertThat(registry.find("login.12345678909").counter()).isNull();
     }
 }
