@@ -60,6 +60,18 @@ platform:
         parallelism: ${ARGON2_PARALLELISM:1}
         salt-length: ${ARGON2_SALT_LENGTH:16}
         hash-length: ${ARGON2_HASH_LENGTH:32}
+        # Independent limits for safe verification of stored PHC hashes; configurable per environment.
+        hash-sanity:
+          min-memory-kib: ${ARGON2_HASH_MIN_MEMORY_KIB:8}
+          max-memory-kib: ${ARGON2_HASH_MAX_MEMORY_KIB:262144}
+          min-iterations: ${ARGON2_HASH_MIN_ITERATIONS:1}
+          max-iterations: ${ARGON2_HASH_MAX_ITERATIONS:10}
+          min-parallelism: ${ARGON2_HASH_MIN_PARALLELISM:1}
+          max-parallelism: ${ARGON2_HASH_MAX_PARALLELISM:16}
+          min-salt-length: ${ARGON2_HASH_MIN_SALT_LENGTH:16}
+          max-salt-length: ${ARGON2_HASH_MAX_SALT_LENGTH:128}
+          min-hash-length: ${ARGON2_HASH_MIN_HASH_LENGTH:16}
+          max-hash-length: ${ARGON2_HASH_MAX_HASH_LENGTH:128}
   crud:
     api:
       # Os endpoints de CRUD ainda não exigem login (BE-004/BE-010): ficam desligados fora dos

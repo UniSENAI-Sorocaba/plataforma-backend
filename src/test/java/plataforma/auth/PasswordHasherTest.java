@@ -2,6 +2,7 @@ package plataforma.auth;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.UUID;
 
 import ch.qos.logback.classic.Level;
@@ -11,12 +12,16 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import plataforma.dto.UserResponse;
 import plataforma.model.UserAccount;
 import plataforma.security.logging.SecretMaskingConverter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 class PasswordHasherTest {
 
@@ -52,15 +57,82 @@ class PasswordHasherTest {
         assertThat(hasher.verify(randomInput, "not-a-hash")).isFalse();
         assertThat(hasher.verify(randomInput, "$argon2id$v=19$m=2147483647,t=2,p=1$YQ$YQ")).isFalse();
         assertThat(hasher.verify(randomInput, "$argon2id$v=19$m=19456,t=2,p=1$%%%$%%%" )).isFalse();
+        assertThatCode(() -> hasher.verify(randomInput, "$argon2id$v=19$m=19456,t=2,p=1$%%%$%%%"))
+                .doesNotThrowAnyException();
         assertThat(hasher.needsRehash("not-a-hash")).isTrue();
     }
 
     @Test
     void weakerSupportedHashNeedsTransparentUpgrade() {
-        Argon2PasswordEncoder previousEncoder = encoder(1);
-        String priorHash = previousEncoder.encode(randomPassword());
+        String password = randomPassword();
+        Argon2PasswordEncoder previousEncoder = encoder(19_456, 1, 1, 16, 16);
+        String priorHash = previousEncoder.encode(password);
 
+        assertThat(hasher.verify(password, priorHash)).isTrue();
+        assertThat(hasher.verify(randomPassword(), priorHash)).isFalse();
         assertThat(hasher.needsRehash(priorHash)).isTrue();
+    }
+
+    @Test
+    void strongerSupportedHashVerifiesAndRequestsRehashToCurrentConfiguration() {
+        String password = randomPassword();
+        Argon2PasswordEncoder strongerEncoder = encoder(24_576, 3, 2, 16, 32);
+        String strongerHash = strongerEncoder.encode(password);
+
+        assertThat(hasher.verify(password, strongerHash)).isTrue();
+        assertThat(hasher.verify(randomPassword(), strongerHash)).isFalse();
+        assertThat(hasher.needsRehash(strongerHash)).isTrue();
+    }
+
+    @Test
+    void rejectsArgonParametersAndEncodedFieldsOutsideSanityLimits() {
+        String password = randomPassword();
+        String validSalt = base64Bytes(16);
+        String validHash = base64Bytes(32);
+        String tooMuchMemory = encoded(262_145, 2, 1, validSalt, validHash);
+        String tooManyIterations = encoded(19_456, 11, 1, validSalt, validHash);
+        String tooMuchParallelism = encoded(19_456, 2, 17, validSalt, validHash);
+        String oversizedSalt = encoded(19_456, 2, 1, base64Bytes(129), validHash);
+        String oversizedHash = encoded(19_456, 2, 1, validSalt, base64Bytes(129));
+
+        for (String absurdHash : Arrays.asList(
+                tooMuchMemory, tooManyIterations, tooMuchParallelism, oversizedSalt, oversizedHash)) {
+            assertThatCode(() -> hasher.verify(password, absurdHash)).doesNotThrowAnyException();
+            assertThat(hasher.verify(password, absurdHash)).isFalse();
+            assertThat(hasher.needsRehash(absurdHash)).isTrue();
+        }
+    }
+
+    @Test
+    void configuredSanityLimitsAreIndependentAndCanBeTightened() {
+        String password = randomPassword();
+        Argon2PasswordEncoder strongerEncoder = encoder(20_480, 2, 1, 16, 32);
+        String strongerHash = strongerEncoder.encode(password);
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isTrue();
+        properties.getHashSanity().setMaxMemoryKib(20_000);
+
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isTrue();
+        assertThat(hasher.verify(password, strongerHash)).isFalse();
+        assertThat(hasher.needsRehash(strongerHash)).isTrue();
+
+        properties.setMemoryKib(20_001);
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isFalse();
+    }
+
+    @Test
+    void sanityLimitsCanBeOverriddenThroughSpringConfigurationProperties() {
+        var source = new MapConfigurationPropertySource(java.util.Map.of(
+                "platform.security.password.argon2.hash-sanity.min-memory-kib", "16",
+                "platform.security.password.argon2.hash-sanity.max-memory-kib", "131072",
+                "platform.security.password.argon2.hash-sanity.max-iterations", "8"));
+
+        Argon2Properties bound = new Binder(source)
+                .bind("platform.security.password.argon2", Bindable.of(Argon2Properties.class))
+                .orElseThrow(() -> new AssertionError("Argon2 properties were not bound"));
+
+        assertThat(bound.getHashSanity().getMinMemoryKib()).isEqualTo(16);
+        assertThat(bound.getHashSanity().getMaxMemoryKib()).isEqualTo(131_072);
+        assertThat(bound.getHashSanity().getMaxIterations()).isEqualTo(8);
     }
 
     @Test
@@ -118,7 +190,20 @@ class PasswordHasherTest {
     }
 
     private static Argon2PasswordEncoder encoder(int iterations) {
-        return new Argon2PasswordEncoder(16, 32, 1, MEMORY_KIB, iterations);
+        return encoder(MEMORY_KIB, iterations, 1, 16, 32);
+    }
+
+    private static Argon2PasswordEncoder encoder(int memoryKib, int iterations, int parallelism,
+            int saltLength, int hashLength) {
+        return new Argon2PasswordEncoder(saltLength, hashLength, parallelism, memoryKib, iterations);
+    }
+
+    private static String encoded(int memoryKib, int iterations, int parallelism, String salt, String hash) {
+        return "$argon2id$v=19$m=" + memoryKib + ",t=" + iterations + ",p=" + parallelism + "$" + salt + "$" + hash;
+    }
+
+    private static String base64Bytes(int length) {
+        return Base64.getEncoder().encodeToString(new byte[length]);
     }
 
     private static String randomPassword() {

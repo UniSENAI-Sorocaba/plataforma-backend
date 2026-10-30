@@ -12,7 +12,7 @@ public final class PasswordHasher {
 
     private static final Pattern ARGON2ID_HASH = Pattern.compile(
             "\\A\\$argon2id\\$v=19\\$m=(\\d+),t=(\\d+),p=(\\d+)\\$([A-Za-z0-9+/]+)\\$([A-Za-z0-9+/]+)\\z");
-    private static final int MAX_ENCODED_FIELD_BYTES = 128;
+    private static final int MAX_ENCODED_HASH_LENGTH = 512;
 
     private final Argon2PasswordEncoder encoder;
     private final Argon2Properties properties;
@@ -49,20 +49,19 @@ public final class PasswordHasher {
         if (parameters == null) {
             return true;
         }
-        return parameters.memoryKib() < properties.getMemoryKib()
-                || parameters.iterations() < properties.getIterations()
-                || parameters.parallelism() < properties.getParallelism()
-                || parameters.saltLength() < properties.getSaltLength()
-                || parameters.hashLength() < properties.getHashLength();
+        return parameters.memoryKib() != properties.getMemoryKib()
+                || parameters.iterations() != properties.getIterations()
+                || parameters.parallelism() != properties.getParallelism()
+                || parameters.saltLength() != properties.getSaltLength()
+                || parameters.hashLength() != properties.getHashLength();
     }
 
     private boolean isSupportedHash(String encodedHash) {
         return parseSupportedHash(encodedHash) != null;
     }
 
-    // TODO(BE-005): lowering configured costs below already-issued hashes needs a migration plan.
     private HashParameters parseSupportedHash(String encodedHash) {
-        if (encodedHash == null || encodedHash.length() > 512) {
+        if (encodedHash == null || encodedHash.length() > MAX_ENCODED_HASH_LENGTH) {
             return null;
         }
         Matcher matcher = ARGON2ID_HASH.matcher(encodedHash);
@@ -73,19 +72,26 @@ public final class PasswordHasher {
             int memoryKib = Integer.parseInt(matcher.group(1));
             int iterations = Integer.parseInt(matcher.group(2));
             int parallelism = Integer.parseInt(matcher.group(3));
-            if (parallelism < 1 || parallelism > properties.getParallelism()) {
+            Argon2Properties.HashSanityLimits limits = properties.getHashSanity();
+            if (memoryKib < limits.getMinMemoryKib()
+                    || memoryKib > limits.getMaxMemoryKib()
+                    || iterations < limits.getMinIterations()
+                    || iterations > limits.getMaxIterations()
+                    || parallelism < limits.getMinParallelism()
+                    || parallelism > limits.getMaxParallelism()
+                    || memoryKib < 8L * parallelism) {
+                return null;
+            }
+            if (matcher.group(4).length() > maxBase64Length(limits.getMaxSaltLength())
+                    || matcher.group(5).length() > maxBase64Length(limits.getMaxHashLength())) {
                 return null;
             }
             byte[] salt = Base64.getDecoder().decode(matcher.group(4));
             byte[] hash = Base64.getDecoder().decode(matcher.group(5));
-            if (memoryKib < 8L * parallelism
-                    || memoryKib > properties.getMemoryKib()
-                    || iterations < 1
-                    || iterations > properties.getIterations()
-                    || salt.length < 16
-                    || salt.length > MAX_ENCODED_FIELD_BYTES
-                    || hash.length < 16
-                    || hash.length > MAX_ENCODED_FIELD_BYTES) {
+            if (salt.length < limits.getMinSaltLength()
+                    || salt.length > limits.getMaxSaltLength()
+                    || hash.length < limits.getMinHashLength()
+                    || hash.length > limits.getMaxHashLength()) {
                 return null;
             }
             return new HashParameters(memoryKib, iterations, parallelism, salt.length, hash.length);
@@ -93,6 +99,10 @@ public final class PasswordHasher {
         catch (IllegalArgumentException ignored) {
             return null;
         }
+    }
+
+    private static int maxBase64Length(int byteLength) {
+        return ((byteLength + 2) / 3) * 4;
     }
 
     private record HashParameters(int memoryKib, int iterations, int parallelism, int saltLength, int hashLength) {
