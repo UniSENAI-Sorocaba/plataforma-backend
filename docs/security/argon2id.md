@@ -13,6 +13,15 @@ Assim o fluxo pode verificar hashes antigos/mais fortes e atualizar o hash após
 sucedida, quando o fluxo de login da BE-004 existir. Formatos inválidos e parâmetros fora dos
 limites são rejeitados antes de chamar o encoder. A API não inclui o hash ou a senha em erros/logs.
 
+## Ponto de integração de autenticação (pendente)
+
+O ponto técnico disponível para BE-004 é `PasswordHasher.verify(password, encodedHash)`, seguido de
+`needsRehash(encodedHash)` após uma verificação bem-sucedida e `hash(password)` se o fluxo aprovado
+precisar gerar um hash atualizado. A persistência do hash atualizado pertence ao fluxo/contrato de
+autenticação aprovado. Este repositório ainda não define serviço ou endpoint de login nem publica
+`CONTRACT-AUTH-001`; por isso não há integração implementada e nenhuma regra de CPF, persistência,
+resposta ou sessão é inferida aqui.
+
 ## Limites de sanidade para hashes já armazenados
 
 Os limites são configuráveis em `platform.security.password.argon2.hash-sanity` e pelas variáveis
