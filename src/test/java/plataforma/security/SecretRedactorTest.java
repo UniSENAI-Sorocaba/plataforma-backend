@@ -61,7 +61,7 @@ class SecretRedactorTest {
     void redactsCompleteAuthorizationAndPasswordValuesIncludingSpaces() {
         assertThat(SecretRedactor.redactText("Authorization: Basic abc123"))
                 .isEqualTo("Authorization: [REDACTED]");
-        assertThat(SecretRedactor.redactText("Authorization: Bearer demo.token-123"))
+        assertThat(SecretRedactor.redactText("Authorization: Bearer <token>"))
                 .isEqualTo("Authorization: [REDACTED]");
         assertThat(SecretRedactor.redactText("password=minha senha"))
                 .isEqualTo("password=[REDACTED]");
