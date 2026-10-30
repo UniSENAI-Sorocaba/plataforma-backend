@@ -56,4 +56,52 @@ class SecretRedactorTest {
         assertThat(safe.contains(token)).isFalse();
         assertThat(safe.contains("[REDACTED]")).isTrue();
     }
+
+    @Test
+    void redactsCompleteAuthorizationAndPasswordValuesIncludingSpaces() {
+        assertThat(SecretRedactor.redactText("Authorization: Basic abc123"))
+                .isEqualTo("Authorization: [REDACTED]");
+        assertThat(SecretRedactor.redactText("Authorization: Bearer demo.token-123"))
+                .isEqualTo("Authorization: [REDACTED]");
+        assertThat(SecretRedactor.redactText("password=minha senha"))
+                .isEqualTo("password=[REDACTED]");
+        assertThat(SecretRedactor.redactText("texto seguro password=minha senha&mode=read fim"))
+                .isEqualTo("texto seguro password=[REDACTED]&mode=read fim");
+    }
+
+    @Test
+    void redactsSecretKeyVariantsCaseInsensitivelyAndPreservesSeparators() {
+        String source = "password: alpha beta; SeNhA=gamma delta, \"password\":\"valor com espaço\" "
+                + "TOKEN=one two&access_token=three four refresh_token:five six api_key=seven eight "
+                + "secret=nine ten cookie=eleven twelve Set-Cookie:thirteen fourteen";
+        String result = SecretRedactor.redactText(source);
+
+        assertThat(result).isEqualTo("password: [REDACTED]; SeNhA=[REDACTED], \"password\":\"[REDACTED]\" "
+                + "TOKEN=[REDACTED]&access_token=[REDACTED] refresh_token:[REDACTED] api_key=[REDACTED] "
+                + "secret=[REDACTED] cookie=[REDACTED] Set-Cookie:[REDACTED]");
+    }
+
+    @Test
+    void redactsMultipleSecretsOnSeparateLinesWithoutConsumingFollowingText() {
+        assertThat(SecretRedactor.redactText("password=first value\ntoken=second value\nstatus=healthy"))
+                .isEqualTo("password=[REDACTED]\ntoken=[REDACTED]\nstatus=healthy");
+    }
+
+    @Test
+    void redactsValidCpfWithAndWithoutPunctuationButLeavesOtherNumbersAlone() {
+        assertThat(SecretRedactor.redactText("cpf 123.456.789-09 and 12345678909"))
+                .isEqualTo("cpf [REDACTED] and [REDACTED]");
+        assertThat(SecretRedactor.redactText("id=123 timestamp=1730304000 epoch=1730304000000 invalid=12345678900"))
+                .isEqualTo("id=123 timestamp=1730304000 epoch=1730304000000 invalid=12345678900");
+    }
+
+    @Test
+    void leavesSafeTextUnchangedAndHandlesLongInput() {
+        String safe = "status=healthy id=42 timestamp=1730304000";
+        assertThat(SecretRedactor.redactText(safe)).isEqualTo(safe);
+
+        String longInput = "password=" + "x".repeat(200_000) + "&status=ok";
+        String result = SecretRedactor.redactText(longInput);
+        assertThat(result).isEqualTo("password=[REDACTED]&status=ok");
+    }
 }
