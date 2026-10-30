@@ -233,6 +233,7 @@ mvn verify
 | `AuditEventServiceTest` | regras do service de auditoria (unitário) |
 | `PlataformaDigitalApplicationTests` | a aplicação sobe |
 | `PasswordHasherTest` | hash Argon2id, sal distinto, verificação, rehash, persistência sem senha e saída de log capturada |
+| `Argon2CalibrationBenchmark` | benchmark manual; executar explicitamente, não roda na suíte Maven padrão |
 | `SecretRedactorTest` | sanitização de campos sensíveis e saída de log capturada |
 | `AuditEventMapperTest` | sanitização dos dados do evento antes de persistir e responder |
 
@@ -243,6 +244,11 @@ execução**. Sem Docker, eles são pulados.
 
 O repositório estende as regras padrão do Gitleaks em `.gitleaks.toml`. Para escanear o conteúdo
 atual da árvore de trabalho, execute `gitleaks dir --redact .`.
+
+## Argon2id
+
+A política de hashing, limites anti-DoS para hashes salvos e instruções do benchmark manual estão em
+[`docs/security/argon2id.md`](docs/security/argon2id.md). O benchmark não roda no `mvn verify` padrão.
 
 ## O que vem nas próximas sprints
 
