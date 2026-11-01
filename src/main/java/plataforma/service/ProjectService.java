@@ -7,9 +7,11 @@ import org.springframework.transaction.annotation.Transactional;
 import plataforma.dto.PageResponse;
 import plataforma.dto.ProjectRequest;
 import plataforma.dto.ProjectResponse;
+import plataforma.exception.PropertyReferenceException;
 import plataforma.exception.ResourceNotFoundException;
 import plataforma.mapper.ProjectMapper;
 import plataforma.model.Project;
+import plataforma.model.Role;
 import plataforma.repository.ProjectRepository;
 
 // TODO BE-007: validar papéis, campos e transições de status das propostas.
@@ -30,6 +32,11 @@ public class ProjectService {
     @Transactional
     public ProjectResponse create(ProjectRequest request) {
         var project = new Project();
+        var mano = userService.findEntity(request.advisorId());
+        //AC-PI-001-03 — Responsável
+        if (mano.getRole() != Role.PROFESSOR) {
+            System.out.println("finge que aqui tem um erro");
+        }
         copyToEntity(request, project);
         return mapper.toResponse(repository.saveAndFlush(project));
     }
@@ -45,6 +52,11 @@ public class ProjectService {
     @Transactional
     public ProjectResponse update(UUID id, ProjectRequest request) {
         var project = findEntity(id);
+        //AC-PI-001-04 — Tipo e duração
+        if (request.projectType() != project.getProjectType()) {
+            System.out.println("deu pobrema ó (ou melhor, ERA para dar problema)");
+            //throw new PropertyReferenceException("Tipo do projeto não deve ser alterado " + request.projectType() + " != " + project.getProjectType());
+        }
         copyToEntity(request, project);
         return mapper.toResponse(repository.saveAndFlush(project));
     }
