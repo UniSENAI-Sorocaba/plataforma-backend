@@ -11,6 +11,7 @@ import plataforma.exception.PropertyReferenceException;
 import plataforma.exception.ResourceNotFoundException;
 import plataforma.mapper.ProjectMapper;
 import plataforma.model.Project;
+import plataforma.model.ProjectStatus;
 import plataforma.model.Role;
 import plataforma.repository.ProjectRepository;
 
@@ -33,7 +34,7 @@ public class ProjectService {
     public ProjectResponse create(ProjectRequest request) {
         var project = new Project();
         var mano = userService.findEntity(request.advisorId());
-        //AC-PI-001-03 — Responsável
+        //AC-PI-001-03 — Responsável: só professor cria
         if (mano.getRole() != Role.PROFESSOR) {
             System.out.println("finge que aqui tem um erro");
         }
@@ -42,6 +43,13 @@ public class ProjectService {
     }
 
     public PageResponse<ProjectResponse> findAll(Pageable pageable) {
+        //era para se usar dados do usario, mas vai com bool hardcoded (pra testar), já que não tem autenticação ainda
+        //AC-PI-001-02 — Publicação inicial: se não é autenticado, não acessa "rascunho"
+        var naoAutenticado = true;
+        if (naoAutenticado) {
+            System.out.println("entro");
+            return PageResponse.from(repository.findBystatusNot(ProjectStatus.PROPOSED ,pageable), mapper::toResponse);
+        }
         return PageResponse.from(repository.findAll(pageable), mapper::toResponse);
     }
 
@@ -52,7 +60,7 @@ public class ProjectService {
     @Transactional
     public ProjectResponse update(UUID id, ProjectRequest request) {
         var project = findEntity(id);
-        //AC-PI-001-04 — Tipo e duração
+        //AC-PI-001-04 — Tipo e duração: não permite alteração de projectype, e talvez o outro campo imaginario
         if (request.projectType() != project.getProjectType()) {
             System.out.println("deu pobrema ó (ou melhor, ERA para dar problema)");
             //throw new PropertyReferenceException("Tipo do projeto não deve ser alterado " + request.projectType() + " != " + project.getProjectType());
