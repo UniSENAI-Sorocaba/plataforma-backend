@@ -13,7 +13,8 @@ import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-// TODO BE-004/BE-005: adicionar a credencial (hash Argon2id) junto com o login.
+// TODO(BE-004/BE-005): quando login local for aprovado, persistir somente o hash Argon2id e
+// coordenar uma migration reversível de auth.user_account com o repositório plataforma-database.
 @Entity
 @Table(schema = "auth", name = "user_account")
 public class UserAccount {
