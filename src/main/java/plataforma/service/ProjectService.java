@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import plataforma.dto.PageResponse;
 import plataforma.dto.ProjectRequest;
 import plataforma.dto.ProjectResponse;
-import plataforma.exception.PropertyReferenceException;
+import plataforma.exception.ConflictException;
 import plataforma.exception.ResourceNotFoundException;
 import plataforma.mapper.ProjectMapper;
 import plataforma.model.Project;
@@ -37,6 +37,7 @@ public class ProjectService {
         //AC-PI-001-01 — Criação: só quem pode criar é usuario com role de professor
         var RoleDoUsuario = Role.STUDENT; //nun tem header ainda para eu catar a role do usuario, então vai hardcoded
         if (RoleDoUsuario != Role.PROFESSOR) {
+            //403
             System.out.println("erro de não professor, tentando criar projeto");
         }
         //AC-PI-001-03 — Responsável: não permite criar projeto com advisor que não seja professor
@@ -44,7 +45,7 @@ public class ProjectService {
         //advisorID, ta dando uns erro 500 quando é null ou não id, não sei se é era para ser assim
         //só sei que era para dar erro mesmo
         if (mano.getRole() != Role.PROFESSOR) {
-            System.out.println("erro de colocar advisor que não é professor");
+            throw new ConflictException("erro de colocar advisor que não é professor");
         }
         copyToEntity(request, project);
         return mapper.toResponse(repository.saveAndFlush(project));
@@ -67,7 +68,7 @@ public class ProjectService {
         var naoAutenticado = true;
         var project = findEntity(id);
         if (naoAutenticado && project.getStatus() == ProjectStatus.PROPOSED) {
-            System.out.println("projeto não encontrado, shh ele não existe");
+            throw new ResourceNotFoundException("projeto não encontrado");
         }
         return mapper.toResponse(project);
     }
@@ -84,6 +85,7 @@ public class ProjectService {
         var idQuemEstaTentandoAlterar = "alguem"; //não sei como vai identificar o usuario no header, mas suponho que seja pelo id
         //use .equal se for string mesmo para checar ID
         if (idQuemEstaTentandoAlterar != mano2) {
+            //403
             System.out.println("erro de professor tentando alterar projeto que não é dele");
         }
         //AC-PI-001-06 — Reabrir/arquivar: se tentar mudar de/para arquivamento, só permite se for docente
@@ -95,22 +97,22 @@ public class ProjectService {
         ) {
             var RoleDoUsuario = Role.STUDENT; //nun tem header ainda para eu catar a role do usuario, então vai hardcoded
             if (RoleDoUsuario != Role.PROFESSOR) {
+                //403
                 System.out.println("erro de não professor, tentando arquivar/reabrir projeto");
             }
         }
         //AC-PI-001-04 — Tipo e duração: não permite alteração de projectype, e talvez o outro campo imaginario (de continuo ou data final)
         if (request.projectType() != project.getProjectType()) {
-            System.out.println("erro de tentar alterar tipo do projeto");
-            //throw new PropertyReferenceException("Tipo do projeto não deve ser alterado " + request.projectType() + " != " + project.getProjectType());
+            throw new ConflictException("erro de tentar alterar tipo do projeto");
         }
         //vamos fingir por enquanto que o outro campo imaginario é o course, e que não pode ser alterado também
         if (!request.course().equals(project.getCourse())) {
-            System.out.println("erro de tentar alterar continuo/data_final do projeto");
+            throw new ConflictException("erro de tentar alterar continuo/data_final do projeto");
         }
         //AC-PI-001-03 — Responsável: não permite (alterar) advisor do projeto para algo que não seja professor
         var mano = userService.findEntity(request.advisorId());
         if (mano.getRole() != Role.PROFESSOR) {
-            System.out.println("erro de colocar advisor que não é professor");
+            throw new ConflictException("erro de colocar advisor que não é professor");
         }
         copyToEntity(request, project);
         return mapper.toResponse(repository.saveAndFlush(project));
