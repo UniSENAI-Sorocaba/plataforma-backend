@@ -37,7 +37,7 @@ public class ProjectService {
         var RoleDoUsuario = Role.STUDENT; //não tem header ainda para se pegar o role do usuário.
         if (RoleDoUsuario != Role.PROFESSOR) {
             //lugar de erro 403
-            System.out.println("erro de não professor, tentando criar projeto");
+            throw new ConflictException("erro de não professor, tentando criar projeto");
         }
         var mano = userService.findEntity(request.advisorId());
         if (mano.getRole() != Role.PROFESSOR) {
@@ -70,14 +70,17 @@ public class ProjectService {
         var RoleDoUsuario = Role.STUDENT; //não tem header ainda para se pegar o role do usuário.
         if (RoleDoUsuario != Role.PROFESSOR) {
             //lugar de erro 403
-            System.out.println("erro de não professor, tentando alterar projeto");
+            throw new ConflictException("erro de não professor, tentando alterar projeto");
         }
         if (request.projectType() != project.getProjectType()) {
             throw new ConflictException("erro de tentar alterar tipo do projeto");
         }
-        if (!request.course().equals(project.getCourse())) { //não se sabe sobre o campo continuo/data_final, então o campo course esta sendo usado.
+        //não se sabe sobre o campo continuo/data_final, então o campo course esta sendo usado.
+        /*
+        if (!request.course().equals(project.getCourse())) { 
             throw new ConflictException("erro de tentar alterar continuo/data_final do projeto");
         }
+        */
         var mano = userService.findEntity(request.advisorId());
         if (mano.getRole() != Role.PROFESSOR) {
             throw new ConflictException("erro de colocar advisor que não é professor");
