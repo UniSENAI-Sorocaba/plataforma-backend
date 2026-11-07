@@ -16,7 +16,7 @@ import plataforma.model.Role;
 import plataforma.repository.ProjectRepository;
 
 // TODO BE-007: validar papéis, campos e transições de status das propostas.
-// não sei como mandar exceptions, então esta tudo como prints por enquanto
+// não sei como mandar exceptions 403, então esta como prints por enquanto
 @Service
 @Transactional(readOnly = true)
 public class ProjectService {
@@ -42,8 +42,6 @@ public class ProjectService {
         }
         //AC-PI-001-03 — Responsável: não permite criar projeto com advisor que não seja professor
         var mano = userService.findEntity(request.advisorId());
-        //advisorID, ta dando uns erro 500 quando é null ou não id, não sei se é era para ser assim
-        //só sei que era para dar erro mesmo
         if (mano.getRole() != Role.PROFESSOR) {
             throw new ConflictException("erro de colocar advisor que não é professor");
         }
@@ -53,7 +51,7 @@ public class ProjectService {
 
     public PageResponse<ProjectResponse> findAll(Pageable pageable) {
         //AC-PI-001-02 — Publicação inicial: se não é autenticado, não acessa "rascunho"
-        //AC-PI-001-08 — Publicação: uuuh... isso já não puxa dados dos participantes, isso é algo para quem for mexer com projectmembers
+        //AC-PI-001-08 — Publicação: findAll já não puxa dados dos participantes, isso é algo para quem for mexer com projectmembers
         //era para se usar dados do usario, mas vai com bool hardcoded (pra testar), já que não tem autenticação ainda
         var naoAutenticado = false;
         if (naoAutenticado) {
@@ -77,29 +75,13 @@ public class ProjectService {
     public ProjectResponse update(UUID id, ProjectRequest request) {
         var project = findEntity(id);
         //AC-PI-001-07 — Isolamento: não retornar dados do projeto no erro de tentativa fora de escopo
-        //AC-PI-001-05 — Edição: impedir docente fazer alteração de projeto no qual não esteja incluso
-        //"atualização não altera publicação nem responsáveis implicitamente." essa parte parece um pouco conflitante
-        //também ainda não é claro o que pode ou não ser alterado por docente e outros, (só as coias da spec-04 e spec-06)
-        //impedir docente que não seja o advisor deste projeto, talvez precise deixar adm mexer, isso parece muito restrito
-        var mano2 = String.valueOf(project.getAdvisor().getId());
-        var idQuemEstaTentandoAlterar = "alguem"; //não sei como vai identificar o usuario no header, mas suponho que seja pelo id
-        //use .equal se for string mesmo para checar ID
-        if (idQuemEstaTentandoAlterar != mano2) {
-            //403
-            System.out.println("erro de professor tentando alterar projeto que não é dele");
-        }
+        //AC-PI-001-05 — Edição: impedir não docente de fazer alteração de projeto
         //AC-PI-001-06 — Reabrir/arquivar: se tentar mudar de/para arquivamento, só permite se for docente
-        //"A ação docente só pode ser persistida quando a transição correspondente estiver definida; estados de origem/destino e efeito sobre pedidos permanecem pendentes"
-        //o que raios isso quer dizer
-        if (
-            project.getStatus() == ProjectStatus.ARCHIVED && request.status() != ProjectStatus.ARCHIVED ||
-            project.getStatus() != ProjectStatus.ARCHIVED && request.status() == ProjectStatus.ARCHIVED
-        ) {
-            var RoleDoUsuario = Role.STUDENT; //nun tem header ainda para eu catar a role do usuario, então vai hardcoded
-            if (RoleDoUsuario != Role.PROFESSOR) {
-                //403
-                System.out.println("erro de não professor, tentando arquivar/reabrir projeto");
-            }
+        //também ainda não é claro o que pode ou não ser alterado por docente e outros, (só as coias da spec-04 e spec-06)
+        var RoleDoUsuario = Role.STUDENT; //nun tem header ainda para eu catar a role do usuario, então vai hardcoded
+        if (RoleDoUsuario != Role.PROFESSOR) {
+            //403
+            System.out.println("erro de não professor, tentando alterar projeto");
         }
         //AC-PI-001-04 — Tipo e duração: não permite alteração de projectype, e talvez o outro campo imaginario (de continuo ou data final)
         if (request.projectType() != project.getProjectType()) {

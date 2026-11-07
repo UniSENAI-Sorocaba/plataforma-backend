@@ -50,8 +50,8 @@ public class Project {
     @JoinColumn(name = "leader_id", nullable = false)
     private UserAccount leader;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "advisor_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "advisor_id", nullable = false)
     private UserAccount advisor;
 
     @CreationTimestamp
