@@ -3,6 +3,7 @@ package plataforma.mapper;
 import plataforma.dto.AuditEventResponse;
 import plataforma.dto.RecordAuditEventRequest;
 import plataforma.model.AuditEvent;
+import plataforma.security.SecretRedactor;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
@@ -20,8 +21,8 @@ public class AuditEventMapper {
                 request.operation(),
                 request.recordId(),
                 request.actorId(),
-                request.oldData(),
-                request.newData());
+                SecretRedactor.redactMap(request.oldData()),
+                SecretRedactor.redactMap(request.newData()));
     }
 
     public AuditEventResponse toResponse(AuditEvent event) {
@@ -33,7 +34,7 @@ public class AuditEventMapper {
                 event.getOperation(),
                 event.getRecordId(),
                 event.getActorId(),
-                event.getOldData(),
-                event.getNewData());
+                SecretRedactor.redactMap(event.getOldData()),
+                SecretRedactor.redactMap(event.getNewData()));
     }
 }
