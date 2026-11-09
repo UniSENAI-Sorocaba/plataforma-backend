@@ -54,6 +54,11 @@ public class ActivityService {
         repository.delete(findEntity(id));
     }
 
+    /** Total de horas aprovadas da inscrição; base para a emissão do certificado (BE-017). */
+    public long approvedHours(UUID enrollmentId) {
+        return repository.sumApprovedHours(enrollmentId);
+    }
+
     public Activity findEntity(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Atividade não encontrada: " + id));

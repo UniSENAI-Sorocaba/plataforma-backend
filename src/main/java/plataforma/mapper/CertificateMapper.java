@@ -1,24 +1,31 @@
 package plataforma.mapper;
 
 import org.springframework.stereotype.Component;
-import plataforma.dto.CertificateRequest;
 import plataforma.dto.CertificateResponse;
+import plataforma.dto.CertificateValidationResponse;
 import plataforma.model.Certificate;
 
 @Component
 public class CertificateMapper {
 
-    public CertificateResponse toResponse(Certificate certificate) {
+    public CertificateResponse toResponse(Certificate certificate, String validationUrl) {
         return new CertificateResponse(
                 certificate.getId(),
                 certificate.getEnrollment().getId(),
                 certificate.getHours(),
                 certificate.getValidationHash(),
-                certificate.getIssuedAt());
+                certificate.getStatus(),
+                certificate.getIssuedAt(),
+                certificate.getRevokedAt(),
+                certificate.getRevocationReason(),
+                validationUrl);
     }
 
-    /** Copia os campos simples. A inscrição é resolvida no service. */
-    public void copyToEntity(CertificateRequest request, Certificate certificate) {
-        certificate.setHours(request.hours());
+    public CertificateValidationResponse toValidationResponse(Certificate certificate) {
+        return new CertificateValidationResponse(
+                certificate.getId(),
+                certificate.getStatus(),
+                certificate.getIssuedAt(),
+                certificate.getRevokedAt());
     }
 }

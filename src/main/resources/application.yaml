@@ -50,3 +50,8 @@ platform:
   audit:
     api:
       enabled: false
+  certificate:
+    # Endereço usado no link/QR Code de validação pública.
+    validation-base-url: ${CERTIFICATE_VALIDATION_BASE_URL:http://localhost:8080}
+    validation:
+      enabled: false

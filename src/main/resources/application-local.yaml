@@ -22,3 +22,6 @@ platform:
   audit:
     api:
       enabled: true
+  certificate:
+    validation:
+      enabled: true

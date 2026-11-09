@@ -1,10 +1,8 @@
 package plataforma.dto;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import java.util.UUID;
 
-public record CertificateRequest(
-        @NotNull UUID enrollmentId,
-        @NotNull @Positive Integer hours) {
+/** Pedido de emissão. As horas não vêm do cliente: são a soma das atividades aprovadas da inscrição. */
+public record CertificateRequest(@NotNull UUID enrollmentId) {
 }

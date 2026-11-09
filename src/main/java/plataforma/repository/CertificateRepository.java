@@ -5,4 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import plataforma.model.Certificate;
 
 public interface CertificateRepository extends JpaRepository<Certificate, UUID> {
+
+    boolean existsByEnrollmentId(UUID enrollmentId);
 }
