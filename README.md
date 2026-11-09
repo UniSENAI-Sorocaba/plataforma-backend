@@ -53,7 +53,9 @@ gerado, que você usa no passo seguinte.
 1. `POST /api/v1/notices`: crie um edital (datas `AAAA-MM-DD`, `advisorId` = professor).
 2. `POST /api/v1/enrollments`: inscreva um aluno no edital.
 3. `POST /api/v1/activities`: registre uma atividade com horas e a referência da evidência.
-4. `POST /api/v1/certificates`: registre o certificado da inscrição.
+4. `POST /api/v1/certificates`: emita o certificado da inscrição (`{ "enrollmentId": "<id>" }`). As horas
+   são a soma das atividades **aprovadas**; sem horas aprovadas a emissão retorna 409.
+5. `GET /api/v1/public/certificates/{id}?hash=<validationHash>`: valide o certificado como um visitante.
 
 As listagens (`GET` sem id) são paginadas, por exemplo `GET /api/v1/projects?page=0&size=20&sort=createdAt,desc`.
 O `sort` aceita qualquer campo do recurso.
@@ -138,6 +140,7 @@ Valores aceitos nos enums:
 | `status` (membro) | `INVITED`, `ACCEPTED`, `DECLINED` |
 | `status` (banca) | `SCHEDULED`, `IN_EVALUATION`, `COMPLETED` |
 | `status` (atividade) | `PENDING`, `APPROVED`, `REJECTED` |
+| `status` (certificado) | `VALID`, `REVOKED` |
 
 ## Endpoints
 
@@ -164,8 +167,39 @@ Todos os recursos têm o mesmo CRUD:
 | Certificados | `/api/v1/certificates` |
 | Auditoria (somente leitura) | `/api/v1/audit-events` |
 
+Exceção: certificados não têm `PUT` nem `DELETE` (veja [Certificados](#certificados-be-017)).
+
 Também existem `GET /actuator/health` (healthcheck) e, só no perfil `local`,
 `POST /api/v1/local/audit-events` para criar eventos de auditoria de teste.
+
+## Certificados (BE-017)
+
+| Método | Rota | Ação | Sucesso |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/certificates` | emitir para uma inscrição | 201 |
+| `GET` | `/api/v1/certificates` | listar (paginado) | 200 |
+| `GET` | `/api/v1/certificates/{id}` | buscar por id | 200 |
+| `POST` | `/api/v1/certificates/{id}/revocation` | revogar com motivo (`{ "reason": "..." }`) | 200 |
+| `GET` | `/api/v1/certificates/{id}/qr-code` | QR Code PNG com o link de validação | 200 |
+| `GET` | `/api/v1/public/certificates/{id}?hash=...` | validação pública, sem login | 200 |
+
+Regras:
+
+- emite somente se a inscrição tiver horas aprovadas; as horas não vêm do cliente;
+- um certificado por inscrição (segunda emissão → 409);
+- o conteúdo emitido é imutável: `validationHash` é o SHA-256 de
+  `plataforma-certificate:v1|enrollment=…|student=…|notice=…|hours=…|issuedAt=…`;
+- revogar não apaga o registro; revogar de novo → 409;
+- a validação pública exige id **e** hash e responde só `id`, `status`, `issuedAt` e `revokedAt`
+  (sem aluno, horas ou motivo, conforme AC-S3-06), com `Cache-Control: no-store`;
+- id inexistente, hash diferente e registro adulterado no banco respondem o mesmo 404.
+
+O link do QR Code usa `platform.certificate.validation-base-url` (variável
+`CERTIFICATE_VALIDATION_BASE_URL`). A validação pública é ligada por
+`platform.certificate.validation.enabled` (ligada em `local` e `test`).
+
+Ainda dependem de decisão do PO (SPEC-EXT-003): PDF, assinatura digital, validade, reemissão,
+campos públicos e quem pode emitir/revogar.
 
 ## Erros
 
@@ -223,6 +257,11 @@ mvn verify
 | `AuditEventIntegrationTests` | gravação e consulta de auditoria com `jsonb` |
 | `AuditEventControllerTest` | rotas de auditoria e resposta 404 |
 | `AuditEventServiceTest` | regras do service de auditoria (unitário) |
+| `CertificateIntegrationTests` | emissão, validação pública, QR, revogação e adulteração com PostgreSQL |
+| `CertificateServiceTest` | regras de emissão, revogação e validação (unitário) |
+| `CertificateHasherTest` | hash determinístico, formato canônico v1 e detecção de alteração |
+| `PublicCertificateControllerTest` | rota pública ligada/desligada e resposta mínima |
+| `QrCodeGeneratorTest` | o PNG gerado é lido de volta com o conteúdo correto |
 | `PlataformaDigitalApplicationTests` | a aplicação sobe |
 
 Os testes de integração sobem um PostgreSQL real com Testcontainers: precisam do **Docker em
@@ -242,7 +281,7 @@ As regras abaixo estão marcadas no código com `TODO BE-0xx`, o ID da task no b
 | BE-015 | `EvaluationService` | calcular `finalGrade` pela rubrica e consolidar a nota da banca |
 | BE-009 | `EnrollmentService` | respeitar janela do edital e elegibilidade |
 | BE-014 | `ActivityService` | deferir/indeferir com motivo e total de horas |
-| BE-017 | `CertificateService` | gerar hash/QR verificável e validação pública |
+| BE-017 | `CertificateService` | PDF, assinatura, validade e reemissão (aguardam o PO); RBAC na emissão/revogação |
 
 Até BE-004 e BE-010, **os endpoints não exigem login**. Por isso os CRUDs, o Swagger e a consulta de
 auditoria ficam desligados no perfil padrão (produção). Quando a autenticação existir, remova a
