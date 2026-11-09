@@ -10,3 +10,6 @@ platform:
   crud:
     api:
       enabled: true
+  certificate:
+    validation:
+      enabled: true
