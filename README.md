@@ -54,7 +54,8 @@ gerado, que você usa no passo seguinte.
 2. `POST /api/v1/enrollments`: inscreva um aluno no edital.
 3. `POST /api/v1/activities`: registre uma atividade com horas e a referência da evidência.
 4. `POST /api/v1/certificates`: emita o certificado da inscrição (`{ "enrollmentId": "<id>" }`). As horas
-   são a soma das atividades **aprovadas**; sem horas aprovadas a emissão retorna 409.
+   são a soma das atividades **aprovadas** e precisam cobrir a carga (`totalHours`) do edital; abaixo
+   disso a emissão retorna 409.
 5. `GET /api/v1/public/certificates/{id}?hash=<validationHash>`: valide o certificado como um visitante.
 
 As listagens (`GET` sem id) são paginadas, por exemplo `GET /api/v1/projects?page=0&size=20&sort=createdAt,desc`.
@@ -117,7 +118,7 @@ Cada recurso tem os mesmos 7 arquivos, um em cada pasta. Use projetos como model
 | `Notice` | `extension.notice` | orientador → `UserAccount` |
 | `Enrollment` | `extension.enrollment` | → `Notice`, aluno → `UserAccount` |
 | `Activity` | `extension.activity` | → `Enrollment`, revisor → `UserAccount` |
-| `Certificate` | `extension.certificate` | → `Enrollment` (um certificado por inscrição) |
+| `Certificate` | `extension.certificate` | → `Enrollment` (no máximo um `VALID` por inscrição) |
 | `AuditEvent` | `public.audit_event` | — (já existe no `plataforma-database`, DB-001) |
 
 ```
@@ -185,8 +186,12 @@ Também existem `GET /actuator/health` (healthcheck) e, só no perfil `local`,
 
 Regras:
 
-- emite somente se a inscrição tiver horas aprovadas; as horas não vêm do cliente;
-- um certificado por inscrição (segunda emissão → 409);
+- emite somente se as horas aprovadas da inscrição forem iguais ou maiores que a carga do edital
+  (`totalHours`); as horas não vêm do cliente. Regra aguardando confirmação do PO;
+- no máximo um certificado `VALID` por inscrição (segunda emissão → 409). Depois de revogado, a
+  inscrição pode receber um novo certificado. A emissão trava a linha da inscrição para evitar duas
+  emissões simultâneas; o índice definitivo fica com a DB-013:
+  `create unique index on extension.certificate (enrollment_id) where status = 'VALID'`;
 - o conteúdo emitido é imutável: `validationHash` é o SHA-256 de
   `plataforma-certificate:v1|enrollment=…|student=…|notice=…|hours=…|issuedAt=…`;
 - revogar não apaga o registro; revogar de novo → 409;
@@ -194,12 +199,15 @@ Regras:
   (sem aluno, horas ou motivo, conforme AC-S3-06), com `Cache-Control: no-store`;
 - id inexistente, hash diferente e registro adulterado no banco respondem o mesmo 404.
 
-O link do QR Code usa `platform.certificate.validation-base-url` (variável
-`CERTIFICATE_VALIDATION_BASE_URL`). A validação pública é ligada por
-`platform.certificate.validation.enabled` (ligada em `local` e `test`).
+O link do QR Code vem de `platform.certificate.validation-url-template` (variável
+`CERTIFICATE_VALIDATION_URL_TEMPLATE`), que deve apontar para a página de validação do frontend e
+conter `{id}` e `{hash}`, por exemplo `https://<frontend>/certificados/validar?id={id}&hash={hash}`.
+**Não há valor padrão fora de `local`/`test`: sem a variável, a aplicação não sobe**, para nenhum QR
+ser impresso apontando para localhost. URL relativa ou sem `http(s)` também impede a inicialização.
+A validação pública é ligada por `platform.certificate.validation.enabled` (ligada em `local` e `test`).
 
-Ainda dependem de decisão do PO (SPEC-EXT-003): PDF, assinatura digital, validade, reemissão,
-campos públicos e quem pode emitir/revogar.
+Ainda dependem de decisão do PO (SPEC-EXT-003): PDF, assinatura digital, validade, campos públicos,
+como evitar PDF falsificado com QR verdadeiro e quem pode emitir/revogar (BE-010).
 
 ## Erros
 
