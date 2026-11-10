@@ -23,5 +23,7 @@ platform:
     api:
       enabled: true
   certificate:
+    # Enquanto a página do frontend não existe, o QR aponta direto para a API local.
+    validation-url-template: http://localhost:8080/api/v1/public/certificates/{id}?hash={hash}
     validation:
       enabled: true

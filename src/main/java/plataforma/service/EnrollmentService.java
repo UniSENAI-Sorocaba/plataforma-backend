@@ -57,6 +57,16 @@ public class EnrollmentService {
         repository.delete(findEntity(id));
     }
 
+    /**
+     * Busca a inscrição travando a linha até o fim da transação. Serializa operações concorrentes
+     * sobre a mesma inscrição, como duas emissões de certificado ao mesmo tempo (BE-017).
+     */
+    @Transactional
+    public Enrollment findEntityForUpdate(UUID id) {
+        return repository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Inscrição não encontrada: " + id));
+    }
+
     public Enrollment findEntity(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inscrição não encontrada: " + id));

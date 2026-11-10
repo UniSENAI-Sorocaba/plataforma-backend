@@ -9,14 +9,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Certificado de horas de extensão (um por inscrição).
+ * Certificado de horas de extensão (no máximo um VALID por inscrição).
  *
  * <p>O conteúdo emitido (inscrição, horas e instante de emissão) não muda depois da emissão: o
  * {@code validationHash} é calculado sobre ele e qualquer divergência indica adulteração. A única
@@ -30,8 +30,13 @@ public class Certificate {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "enrollment_id", nullable = false, unique = true, updatable = false)
+    /**
+     * Uma inscrição pode ter vários certificados ao longo do tempo (ex.: revogado e emitido de novo),
+     * mas só um VALID por vez. Índice proposto para a DB-013:
+     * {@code create unique index on extension.certificate (enrollment_id) where status = 'VALID'}.
+     */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "enrollment_id", nullable = false, updatable = false)
     private Enrollment enrollment;
 
     @Column(nullable = false, updatable = false)

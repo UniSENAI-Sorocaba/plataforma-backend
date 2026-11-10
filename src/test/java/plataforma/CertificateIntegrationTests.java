@@ -37,11 +37,11 @@ class CertificateIntegrationTests {
     private JdbcTemplate jdbc;
 
     @Test
-    void emiteValidaERevogaCertificado() throws Exception {
-        var enrollmentId = createEnrollment();
+    void emiteValidaRevogaEReemiteCertificado() throws Exception {
+        var enrollmentId = createEnrollment(35);
         approveActivity(createActivity(enrollmentId, 30), 25);
         approveActivity(createActivity(enrollmentId, 10), 10);
-        createActivity(enrollmentId, 50); // pendente: não conta
+        var pendente = createActivity(enrollmentId, 50); // pendente: não conta
 
         var issued = mockMvc.perform(post("/api/v1/certificates").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"enrollmentId\": \"%s\"}".formatted(enrollmentId)))
@@ -85,21 +85,47 @@ class CertificateIntegrationTests {
         mockMvc.perform(put("/api/v1/certificates/{id}", id).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isMethodNotAllowed());
         mockMvc.perform(delete("/api/v1/certificates/{id}", id)).andExpect(status().isMethodNotAllowed());
+
+        // Horas corrigidas depois da revogação: a inscrição volta a poder receber certificado.
+        approveActivity(pendente, 5);
+        var reissued = mockMvc.perform(post("/api/v1/certificates").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enrollmentId\": \"%s\"}".formatted(enrollmentId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.hours").value(40))
+                .andExpect(jsonPath("$.status").value("VALID"))
+                .andReturn().getResponse().getContentAsString();
+        String newId = JsonPath.read(reissued, "$.id");
+        String newHash = JsonPath.read(reissued, "$.validationHash");
+        assertThat(newId).isNotEqualTo(id);
+
+        mockMvc.perform(get("/api/v1/public/certificates/{id}", newId).param("hash", newHash))
+                .andExpect(jsonPath("$.status").value("VALID"));
+        mockMvc.perform(get("/api/v1/public/certificates/{id}", id).param("hash", hash))
+                .andExpect(jsonPath("$.status").value("REVOKED"));
+        mockMvc.perform(post("/api/v1/certificates").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enrollmentId\": \"%s\"}".formatted(enrollmentId)))
+                .andExpect(status().isConflict());
     }
 
     @Test
-    void naoEmiteSemHorasAprovadasEDetectaAdulteracaoNoBanco() throws Exception {
-        var semHoras = createEnrollment();
+    void exigeCargaDoEditalEDetectaAdulteracaoNoBanco() throws Exception {
+        var semHoras = createEnrollment(20);
         createActivity(semHoras, 20);
         mockMvc.perform(post("/api/v1/certificates").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"enrollmentId\": \"%s\"}".formatted(semHoras)))
                 .andExpect(status().isConflict());
 
-        var enrollmentId = createEnrollment();
+        var enrollmentId = createEnrollment(10);
         approveActivity(createActivity(enrollmentId, 8), 8);
+        mockMvc.perform(post("/api/v1/certificates").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enrollmentId\": \"%s\"}".formatted(enrollmentId)))
+                .andExpect(status().isConflict()); // 8h de 10h: abaixo da carga
+
+        approveActivity(createActivity(enrollmentId, 2), 2);
         var issued = mockMvc.perform(post("/api/v1/certificates").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"enrollmentId\": \"%s\"}".formatted(enrollmentId)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isCreated()) // 10h de 10h: igual à carga
+                .andExpect(jsonPath("$.hours").value(10))
                 .andReturn().getResponse().getContentAsString();
         String id = JsonPath.read(issued, "$.id");
         String hash = JsonPath.read(issued, "$.validationHash");
@@ -116,13 +142,13 @@ class CertificateIntegrationTests {
                 hours, UUID.fromString(activityId));
     }
 
-    private String createEnrollment() throws Exception {
+    private String createEnrollment(int noticeTotalHours) throws Exception {
         var studentId = createUser("STUDENT");
         var professorId = createUser("PROFESSOR");
         var notice = createAndGetId("/api/v1/notices", """
                 {"title": "Edital de extensão", "description": "Ações comunitárias", "startsOn": "2026-08-01",
-                 "endsOn": "2026-12-15", "totalHours": 60, "advisorId": "%s", "active": true}
-                """.formatted(professorId));
+                 "endsOn": "2026-12-15", "totalHours": %d, "advisorId": "%s", "active": true}
+                """.formatted(noticeTotalHours, professorId));
         return createAndGetId("/api/v1/enrollments", """
                 {"noticeId": "%s", "studentId": "%s"}
                 """.formatted(notice, studentId));

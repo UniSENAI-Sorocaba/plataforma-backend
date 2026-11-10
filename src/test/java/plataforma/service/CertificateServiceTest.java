@@ -31,7 +31,7 @@ import plataforma.repository.CertificateRepository;
 class CertificateServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-11-09T15:00:00.987654Z");
-    private static final String BASE_URL = "https://plataforma.test";
+    private static final String URL_TEMPLATE = "https://plataforma.test/certificados/validar?id={id}&hash={hash}";
 
     private final UUID enrollmentId = UUID.randomUUID();
     private final UUID studentId = UUID.randomUUID();
@@ -51,10 +51,10 @@ class CertificateServiceTest {
         activityService = mock(ActivityService.class);
         hasher = new CertificateHasher();
         service = new CertificateService(repository, new CertificateMapper(), enrollmentService, activityService,
-                hasher, new QrCodeGenerator(), Clock.fixed(NOW, ZoneOffset.UTC), BASE_URL);
+                hasher, new QrCodeGenerator(), Clock.fixed(NOW, ZoneOffset.UTC), URL_TEMPLATE);
 
         enrollment = enrollment(enrollmentId, studentId, noticeId);
-        when(enrollmentService.findEntity(enrollmentId)).thenReturn(enrollment);
+        when(enrollmentService.findEntityForUpdate(enrollmentId)).thenReturn(enrollment);
         when(repository.saveAndFlush(any(Certificate.class))).thenAnswer(invocation -> {
             Certificate certificate = invocation.getArgument(0);
             if (certificate.getId() == null) {
@@ -75,8 +75,8 @@ class CertificateServiceTest {
         assertThat(response.status()).isEqualTo(CertificateStatus.VALID);
         assertThat(response.issuedAt()).isEqualTo(issuedAt);
         assertThat(response.validationHash()).isEqualTo(hasher.hash(enrollmentId, studentId, noticeId, 40, issuedAt));
-        assertThat(response.validationUrl()).isEqualTo(BASE_URL + "/api/v1/public/certificates/" + response.id()
-                + "?hash=" + response.validationHash());
+        assertThat(response.validationUrl()).isEqualTo("https://plataforma.test/certificados/validar?id="
+                + response.id() + "&hash=" + response.validationHash());
         assertThat(response.revokedAt()).isNull();
     }
 
@@ -86,24 +86,65 @@ class CertificateServiceTest {
 
         assertThatThrownBy(() -> service.issue(new CertificateRequest(enrollmentId)))
                 .isInstanceOf(ConflictException.class)
-                .hasMessageContaining("sem horas aprovadas");
+                .hasMessageContaining("abaixo da carga do edital");
         verify(repository, never()).saveAndFlush(any());
     }
 
     @Test
-    void naoEmiteSegundoCertificadoParaAMesmaInscricao() {
-        when(repository.existsByEnrollmentId(enrollmentId)).thenReturn(true);
+    void naoEmiteSegundoCertificadoValidoParaAMesmaInscricao() {
+        when(repository.existsByEnrollmentIdAndStatus(enrollmentId, CertificateStatus.VALID)).thenReturn(true);
 
         assertThatThrownBy(() -> service.issue(new CertificateRequest(enrollmentId)))
                 .isInstanceOf(ConflictException.class)
-                .hasMessageContaining("já possui certificado");
+                .hasMessageContaining("já possui certificado válido");
         verify(repository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void naoEmiteComHorasAbaixoDaCargaDoEdital() {
+        when(activityService.approvedHours(enrollmentId)).thenReturn(39L);
+
+        assertThatThrownBy(() -> service.issue(new CertificateRequest(enrollmentId)))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("abaixo da carga do edital");
+        verify(repository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void emiteComHorasIguaisOuAcimaDaCargaUsandoAsHorasAprovadas() {
+        when(activityService.approvedHours(enrollmentId)).thenReturn(40L, 55L);
+
+        assertThat(service.issue(new CertificateRequest(enrollmentId)).hours()).isEqualTo(40);
+        assertThat(service.issue(new CertificateRequest(enrollmentId)).hours()).isEqualTo(55);
+    }
+
+    @Test
+    void revogadoNaoImpedeNovaEmissao() {
+        // Só certificado VALID bloqueia: com o anterior revogado, a consulta por VALID retorna false.
+        when(repository.existsByEnrollmentIdAndStatus(enrollmentId, CertificateStatus.VALID)).thenReturn(false);
+        when(activityService.approvedHours(enrollmentId)).thenReturn(40L);
+
+        assertThat(service.issue(new CertificateRequest(enrollmentId)).status()).isEqualTo(CertificateStatus.VALID);
+        verify(repository).existsByEnrollmentIdAndStatus(enrollmentId, CertificateStatus.VALID);
+    }
+
+    @Test
+    void templateDeUrlDeValidacaoEhObrigatorioEAbsoluto() {
+        assertThatThrownBy(() -> CertificateService.requireValidTemplate(null))
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> CertificateService.requireValidTemplate("https://plataforma.test/validar?id={id}"))
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> CertificateService.requireValidTemplate("/validar/{id}?hash={hash}"))
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> CertificateService.requireValidTemplate("ftp://plataforma.test/{id}/{hash}"))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(CertificateService.requireValidTemplate(URL_TEMPLATE)).isEqualTo(URL_TEMPLATE);
     }
 
     @Test
     void inscricaoInexistenteRetornaNotFound() {
         var unknown = UUID.randomUUID();
-        when(enrollmentService.findEntity(unknown)).thenThrow(new ResourceNotFoundException("Inscrição não encontrada"));
+        when(enrollmentService.findEntityForUpdate(unknown)).thenThrow(new ResourceNotFoundException("Inscrição não encontrada"));
 
         assertThatThrownBy(() -> service.issue(new CertificateRequest(unknown)))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -182,6 +223,7 @@ class CertificateServiceTest {
         ReflectionTestUtils.setField(student, "id", studentId);
         var notice = new Notice();
         ReflectionTestUtils.setField(notice, "id", noticeId);
+        notice.setTotalHours(40);
         var enrollment = new Enrollment();
         ReflectionTestUtils.setField(enrollment, "id", enrollmentId);
         enrollment.setStudent(student);
