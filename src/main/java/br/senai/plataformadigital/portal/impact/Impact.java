@@ -19,9 +19,9 @@ public record Impact(UUID id, long revision, Map<Long, Version> versions,
                              LocalDate periodStart, LocalDate periodEnd) { }
     public record Approval(String actor, Instant at) { }
     public record Version(long number, Content content, Provenance provenance,
-                          String createdBy, Instant createdAt, Approval approval) { }
+                          String createdBy, Instant createdAt, Approval approval, boolean withdrawn) { }
     /** Evento pronto para o adapter de auditoria BE-016, sem conteúdo ou origem privada. */
     public record Event(UUID impactId, long revision, Action action, long version, String actor,
-                        Instant at, String correlationId, String result) { }
+                        Instant at, String correlationId, String result, String withdrawalReason) { }
     public enum Action { CREATE, REVISE, READ, APPROVE, PUBLISH, WITHDRAW, AUDIT }
 }

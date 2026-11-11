@@ -339,17 +339,19 @@
                 "examples": {
                   "synthetic": {
                     "value": {
-                      "items": [
+                      "page": 0,
+                      "size": 25,
+                      "totalElements": 1,
+                      "content": [
                         {
                           "version": 1,
                           "title": "Projeto sintético de impacto",
                           "summary": "Resultado público sintético aprovado para teste.",
-                          "approved": false
+                          "approved": false,
+                          "withdrawn": false
                         }
                       ],
-                      "page": 0,
-                      "size": 25,
-                      "totalElements": 1
+                      "totalPages": 1
                     }
                   }
                 }
@@ -719,6 +721,24 @@
           "503": {
             "$ref": "#/components/responses/Error503"
           }
+        },
+        "description": "Retira a versão publicada e exige uma nova aprovação para republicá-la.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawalInput"
+              },
+              "examples": {
+                "synthetic": {
+                  "value": {
+                    "reason": "Correção de dados sintéticos"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -972,7 +992,10 @@
                 "examples": {
                   "synthetic": {
                     "value": {
-                      "items": [
+                      "page": 0,
+                      "size": 25,
+                      "totalElements": 1,
+                      "content": [
                         {
                           "impactId": "00000000-0000-0000-0000-000000000001",
                           "revision": 1,
@@ -984,9 +1007,7 @@
                           "result": "SUCCESS"
                         }
                       ],
-                      "page": 0,
-                      "size": 25,
-                      "totalElements": 1
+                      "totalPages": 1
                     }
                   }
                 }
@@ -1122,7 +1143,8 @@
           "version",
           "title",
           "summary",
-          "approved"
+          "approved",
+          "withdrawn"
         ],
         "properties": {
           "version": {
@@ -1136,6 +1158,9 @@
             "type": "string"
           },
           "approved": {
+            "type": "boolean"
+          },
+          "withdrawn": {
             "type": "boolean"
           }
         }
@@ -1235,13 +1260,27 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "items",
+          "content",
           "page",
           "size",
-          "totalElements"
+          "totalElements",
+          "totalPages"
         ],
         "properties": {
-          "items": {
+          "page": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "totalElements": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "content": {
             "type": "array",
             "items": {
               "type": "object",
@@ -1290,20 +1329,18 @@
                 "result": {
                   "type": "string",
                   "const": "SUCCESS"
+                },
+                "withdrawalReason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 512
                 }
               }
             }
           },
-          "page": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "size": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 100
-          },
-          "totalElements": {
+          "totalPages": {
             "type": "integer",
             "minimum": 0
           }
@@ -1317,7 +1354,9 @@
           "title",
           "status",
           "detail",
-          "correlationId"
+          "code",
+          "message",
+          "correlation_id"
         ],
         "properties": {
           "type": {
@@ -1335,8 +1374,21 @@
           "instance": {
             "type": "string"
           },
-          "correlationId": {
+          "code": {
             "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "correlation_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       },
@@ -1344,18 +1396,13 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "items",
+          "content",
           "page",
           "size",
-          "totalElements"
+          "totalElements",
+          "totalPages"
         ],
         "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/VersionResponse"
-            }
-          },
           "page": {
             "type": "integer",
             "minimum": 0
@@ -1368,6 +1415,32 @@
           "totalElements": {
             "type": "integer",
             "minimum": 0
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VersionResponse"
+            }
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "WithdrawalInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "\\S",
+            "description": "Motivo registrado no histórico restrito de auditoria."
           }
         }
       }
@@ -1383,11 +1456,13 @@
             "examples": {
               "synthetic": {
                 "value": {
-                  "type": "about:blank",
+                  "type": "https://errors.plataforma.senai.br/validation_error",
                   "title": "Erro de requisição",
                   "status": 400,
                   "detail": "Mensagem pública sanitizada",
-                  "correlationId": "synthetic-correlation"
+                  "correlation_id": "synthetic-correlation",
+                  "code": "VALIDATION_ERROR",
+                  "message": "Mensagem pública sanitizada"
                 }
               }
             }
@@ -1404,11 +1479,13 @@
             "examples": {
               "synthetic": {
                 "value": {
-                  "type": "about:blank",
+                  "type": "https://errors.plataforma.senai.br/unauthenticated",
                   "title": "Erro de requisição",
                   "status": 401,
                   "detail": "Mensagem pública sanitizada",
-                  "correlationId": "synthetic-correlation"
+                  "correlation_id": "synthetic-correlation",
+                  "code": "UNAUTHENTICATED",
+                  "message": "Mensagem pública sanitizada"
                 }
               }
             }
@@ -1425,11 +1502,13 @@
             "examples": {
               "synthetic": {
                 "value": {
-                  "type": "about:blank",
+                  "type": "https://errors.plataforma.senai.br/forbidden",
                   "title": "Erro de requisição",
                   "status": 403,
                   "detail": "Mensagem pública sanitizada",
-                  "correlationId": "synthetic-correlation"
+                  "correlation_id": "synthetic-correlation",
+                  "code": "FORBIDDEN",
+                  "message": "Mensagem pública sanitizada"
                 }
               }
             }
@@ -1446,11 +1525,13 @@
             "examples": {
               "synthetic": {
                 "value": {
-                  "type": "about:blank",
+                  "type": "https://errors.plataforma.senai.br/not_found",
                   "title": "Erro de requisição",
                   "status": 404,
                   "detail": "Mensagem pública sanitizada",
-                  "correlationId": "synthetic-correlation"
+                  "correlation_id": "synthetic-correlation",
+                  "code": "NOT_FOUND",
+                  "message": "Mensagem pública sanitizada"
                 }
               }
             }
@@ -1467,11 +1548,13 @@
             "examples": {
               "synthetic": {
                 "value": {
-                  "type": "about:blank",
+                  "type": "https://errors.plataforma.senai.br/conflict",
                   "title": "Erro de requisição",
                   "status": 409,
                   "detail": "Mensagem pública sanitizada",
-                  "correlationId": "synthetic-correlation"
+                  "correlation_id": "synthetic-correlation",
+                  "code": "CONFLICT",
+                  "message": "Mensagem pública sanitizada"
                 }
               }
             }
@@ -1488,11 +1571,13 @@
             "examples": {
               "synthetic": {
                 "value": {
-                  "type": "about:blank",
+                  "type": "https://errors.plataforma.senai.br/impact_unavailable",
                   "title": "Erro de requisição",
                   "status": 503,
                   "detail": "Mensagem pública sanitizada",
-                  "correlationId": "synthetic-correlation"
+                  "correlation_id": "synthetic-correlation",
+                  "code": "IMPACT_UNAVAILABLE",
+                  "message": "Mensagem pública sanitizada"
                 }
               }
             }
@@ -1509,11 +1594,13 @@
             "examples": {
               "synthetic": {
                 "value": {
-                  "type": "about:blank",
+                  "type": "https://errors.plataforma.senai.br/precondition_failed",
                   "title": "Erro de requisição",
                   "status": 412,
                   "detail": "Mensagem pública sanitizada",
-                  "correlationId": "synthetic-correlation"
+                  "correlation_id": "synthetic-correlation",
+                  "code": "PRECONDITION_FAILED",
+                  "message": "Mensagem pública sanitizada"
                 }
               }
             }
@@ -1530,11 +1617,13 @@
             "examples": {
               "synthetic": {
                 "value": {
-                  "type": "about:blank",
+                  "type": "https://errors.plataforma.senai.br/precondition_required",
                   "title": "Erro de requisição",
                   "status": 428,
                   "detail": "Mensagem pública sanitizada",
-                  "correlationId": "synthetic-correlation"
+                  "correlation_id": "synthetic-correlation",
+                  "code": "PRECONDITION_REQUIRED",
+                  "message": "Mensagem pública sanitizada"
                 }
               }
             }

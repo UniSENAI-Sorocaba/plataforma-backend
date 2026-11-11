@@ -14,6 +14,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import plataforma.config.CorrelationIdFilter;
+import plataforma.dto.PageResponse;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -50,8 +52,8 @@ public class ImpactController {
 
     @DeleteMapping("/{id}/publication")
     ResponseEntity<ManagementResponse> withdraw(@PathVariable UUID id, @RequestHeader("If-Match") String revision,
-                                               HttpServletRequest request) {
-        return response(service.withdraw(id, revision(revision), correlation(request)));
+                                               @Valid @RequestBody WithdrawalInput input, HttpServletRequest request) {
+        return response(service.withdraw(id, revision(revision), input.reason(), correlation(request)));
     }
 
     @GetMapping("/{id}/versions")
@@ -61,7 +63,7 @@ public class ImpactController {
         List<VersionResponse> versions = impact.versions().values().stream()
                 .sorted(Comparator.comparingLong(Impact.Version::number)).map(version ->
                         new VersionResponse(version.number(), version.content().title(), version.content().summary(),
-                                version.approval() != null)).toList();
+                                version.approval() != null && !version.withdrawn(), version.withdrawn())).toList();
         return ResponseEntity.ok().eTag(etag(impact)).body(page(versions, page, size));
     }
 
@@ -85,7 +87,7 @@ public class ImpactController {
     PageResponse<HistoryResponse> history(@PathVariable UUID id, @RequestParam(defaultValue = "0") int page,
                                          @RequestParam(defaultValue = "25") int size) {
         return page(service.history(id).stream().map(event -> new HistoryResponse(event.impactId(), event.revision(), event.action().name(),
-                event.version(), event.actor(), event.at(), event.correlationId(), event.result())).toList(), page, size);
+                event.version(), event.actor(), event.at(), event.correlationId(), event.result(), event.withdrawalReason())).toList(), page, size);
     }
 
     private ResponseEntity<ManagementResponse> response(Impact impact) {
@@ -99,7 +101,8 @@ public class ImpactController {
 
     private <T> PageResponse<T> page(List<T> items, int page, int size) {
         if (page < 0 || size < 1 || size > 100) throw new ImpactFailure(400, "Paginação inválida: page >= 0 e size entre 1 e 100");
-        return new PageResponse<>(items.stream().skip((long) page * size).limit(size).toList(), page, size, items.size());
+        return new PageResponse<>(items.stream().skip((long) page * size).limit(size).toList(), page, size, items.size(),
+                (int) ((items.size() + (long) size - 1) / size));
     }
 
     private Impact.Content content(DraftInput input) { return new Impact.Content(input.title(), input.summary()); }
@@ -107,7 +110,7 @@ public class ImpactController {
         return new Impact.Provenance(input.provenance().sourceReference(), input.provenance().responsibleReference(),
                 input.provenance().periodStart(), input.provenance().periodEnd());
     }
-    private String correlation(HttpServletRequest request) { return (String) request.getAttribute("impact.correlation"); }
+    private String correlation(HttpServletRequest request) { return CorrelationIdFilter.correlationId(request); }
     private String etag(Impact impact) { return "\"" + impact.revision() + "\""; }
 
     private long revision(String header) {
@@ -130,12 +133,12 @@ public class ImpactController {
                                   @NotNull LocalDate periodStart, @NotNull LocalDate periodEnd) implements StrictInput { }
     public record PublicationInput(@Positive long version) implements StrictInput { }
     public record ManagementResponse(UUID id, long revision, Long publishedVersion, long latestVersion) { }
-    public record PageResponse<T>(List<T> items, int page, int size, long totalElements) { }
-    public record VersionResponse(long version, String title, String summary, boolean approved) { }
+    public record WithdrawalInput(@NotBlank @Size(max = ImpactService.WITHDRAWAL_REASON_LIMIT) String reason) implements StrictInput { }
+    public record VersionResponse(long version, String title, String summary, boolean approved, boolean withdrawn) { }
     public record PublicResponse(UUID id, long version, String title, String summary) { }
     public record ProvenanceResponse(UUID id, long version, String sourceReference, String responsibleReference,
                                      LocalDate periodStart, LocalDate periodEnd, String createdBy, Instant createdAt,
                                      String approvedBy, Instant approvedAt) { }
     public record HistoryResponse(UUID impactId, long revision, String action, long version, String actor,
-                                  Instant at, String correlationId, String result) { }
+                                  Instant at, String correlationId, String result, String withdrawalReason) { }
 }

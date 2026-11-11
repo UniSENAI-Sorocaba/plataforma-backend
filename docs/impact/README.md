@@ -10,11 +10,11 @@ substituído pelo módulo `portal.impact`.
 
 1. Criar um rascunho com conteúdo textual e origem obrigatória, responsável e período.
 2. Criar novas versões sem alterar versões anteriores ou sua aprovação.
-3. Aprovar uma versão específica sem publicá-la automaticamente.
-4. Publicar somente uma versão que tenha aprovação. Uma nova versão em rascunho
+3. Aprovar uma versão específica com um ator diferente do autor.
+4. Publicar uma versão aprovada com um ator diferente de quem aprovou. Uma nova versão em rascunho
    não substitui a versão publicada anteriormente.
 5. Consultar publicamente somente o conteúdo da versão efetivamente publicada.
-6. Retirar a publicação sem apagar versões, aprovações ou histórico.
+6. Retirar a publicação com motivo obrigatório, preservar o histórico e exigir nova aprovação para republicar.
 7. Consultar versões e histórico com paginação e origem com autorização específica.
 
 As operações create/revise/approve/publish/withdraw são do escopo BE-019 e estão
@@ -36,7 +36,7 @@ schemas com NetworkNT. Não substitui a aprovação de CONTRACT-PORTAL-001.
 | GET /api/v1/impacts/{id}/versions | Listar versões internas |
 | POST /api/v1/impacts/{id}/versions/{version}/approval | Aprovar versão |
 | PUT /api/v1/impacts/{id}/publication | Publicar a versão do body |
-| DELETE /api/v1/impacts/{id}/publication | Retirar publicação |
+| DELETE /api/v1/impacts/{id}/publication | Retirar publicação com motivo no body |
 | GET /api/v1/impacts/{id} | Consultar conteúdo publicado, sem origem |
 | GET /api/v1/impacts/{id}/versions/{version}/provenance | Consultar rastreabilidade da versão |
 | GET /api/v1/impacts/{id}/history | Consultar histórico de alterações |
@@ -47,7 +47,7 @@ inventadas métricas numéricas ou dados de beneficiários. Origem interna cont�
 e limites locais estão sujeitos à revisão da PG-012; a baseline não foi alterada
 e a SPEC continua Draft. O intervalo usa datas inclusivas, com início <= fim.
 
-Exemplo sintético: `src/test/resources/impact/draft.json`. A saída pública contém
+As fixtures em `src/test/resources/impact/` cobrem rascunho, aprovação, publicação e retirada. A saída pública contém
 somente id, version, title e summary. Origem, responsável, período e atores de
 aprovação não são serializados nas consultas públicas ou na listagem de versões.
 Campos extras no body são rejeitados, inclusive tentativas de enviar approved,
@@ -58,15 +58,14 @@ alterações após create exigem If-Match com esse ETag: ausência retorna 428,
 formato inválido 400 e revisão desatualizada 412. O repository também executa
 compare-and-set, evitando gravações concorrentes mesmo após a primeira leitura.
 A segunda aprovação/publicação da mesma versão e retirada sem publicação ativa
-retornam 409. Republicação de uma versão já aprovada exige novo comando autorizado.
+retornam 409. O motivo da retirada aparece somente no histórico de auditoria. As regras de separação entre os atores ficam sujeitas à validação do PO.
 
 Versões/histórico usam page (base zero, padrão 0) e size (1–100, padrão 25), com
-items, page, size e totalElements. As versões são ordenadas por número e eventos
+content, page, size, totalElements e totalPages, no envelope da develop. As versões são ordenadas por número e eventos
 por revisão. Erros usam ProblemDetail RFC 9457 e correlação, sem payload interno.
 
 Todas as respostas de impacto, inclusive erros e consultas públicas, usam
-Cache-Control: no-store. X-Correlation-Id é validado por tamanho/caracteres ou
-substituído por UUID; essa correlação acompanha os eventos das alterações.
+Cache-Control: no-store. O filtro transversal da BE-002 valida ou gera X-Correlation-Id. O mesmo valor acompanha os eventos e aparece em correlation_id nos erros.
 O servidor não mantém cache de conteúdo publicado. O teste de retirada consulta
 novamente o mesmo endpoint e verifica 404 imediatamente.
 
@@ -76,7 +75,7 @@ impact:* para a mesma fonte ImpactPermissionProvider já usada nos comandos.
 Não há uma segunda tabela de permissões ou concessão global. Os três tipos
 públicos de contrato Auth são idênticos aos da PR #39, permitindo compilar esta
 branch isoladamente; não foi copiado seu interceptor ou mecanismo de decisão.
-Na integração Git, preservar as duas entradas de auto-configuration (Auth/Portal).
+O módulo de impacto é registrado pela configuração da aplicação em plataforma.config.
 
 ## Segurança e integração
 
@@ -95,7 +94,7 @@ Origem e histórico exigem AUDIT antes da leitura, inclusive para recurso inexis
 
 ImpactRepository persiste estado imutável, versões e eventos de alteração juntos.
 Cada evento inclui impactId, versão, revisão, ação, ator, instante, correlação e
-resultado SUCCESS. Uma gravação recusada/falha não acrescenta histórico. Esses
+resultado SUCCESS e, somente na retirada, motivo. Falhas de armazenamento geram log com a operação e a classe da causa, sem copiar a exceção para a resposta. Uma gravação recusada/falha não acrescenta histórico. Esses
 eventos não contêm conteúdo, origem, senha ou token. O adapter durável deve gravar
 estado e outbox na mesma transação e encaminhar os eventos à BE-016, sem janela
 de publicação sem registro. Denegações/retenção/consulta da auditoria central
@@ -122,7 +121,7 @@ A suíte cobre fluxo HTTP completo, schemas de contrato, preservação de versõ
 origem/responsável/período, negações/forja de identidade, retirada, concorrência,
 falhas de gravação, paginação, erros sanitizados, overposting e indisponibilidade.
 JaCoCo exige 90% das linhas e 80% dos branches de todo o módulo portal.impact.
-Evidências: target/surefire-reports e target/site/jacoco. O workflow impact.yml
+Evidências: target/surefire-reports e target/site/jacoco-impact. O workflow impact.yml
 executa clean verify e publica esses relatórios, contrato, fixtures e compliance.
 
 ## Dependências externas

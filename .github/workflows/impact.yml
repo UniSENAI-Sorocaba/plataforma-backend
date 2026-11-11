@@ -3,7 +3,7 @@ name: Impact publication API
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, develop]
 
 permissions:
   contents: read
@@ -35,8 +35,8 @@ jobs:
           name: impact-evidence
           path: |
             target/surefire-reports/
-            target/site/jacoco/
-            src/test/resources/impact/draft.json
+            target/site/jacoco-impact/
+            src/test/resources/impact/
             contracts/impact.openapi.json
             docs/compliance/BE-019.md
           if-no-files-found: warn

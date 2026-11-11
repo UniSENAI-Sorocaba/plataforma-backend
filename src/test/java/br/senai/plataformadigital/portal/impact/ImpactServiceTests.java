@@ -38,14 +38,16 @@ class ImpactServiceTests {
         var repository = new InMemoryImpactRepository();
         ImpactService service = service(repository, ALLOW);
         Impact draft = service.create(CONTENT, SOURCE, "correlation");
-        service.approve(ID, 1, 1, "correlation");
+        service(repository, access(() -> Optional.of("synthetic-approver"), true)).approve(ID, 1, 1, "correlation");
         service.publish(ID, 1, 2, "correlation");
-        Impact withdrawn = service.withdraw(ID, 3, "correlation");
+        Impact withdrawn = service.withdraw(ID, 3, "Synthetic reason", "correlation");
         assertEquals(4, withdrawn.revision());
+        assertTrue(withdrawn.versions().get(1L).withdrawn());
+        assertEquals("Synthetic reason", withdrawn.history().getLast().withdrawalReason());
         assertEquals(List.of(Impact.Action.CREATE, Impact.Action.APPROVE, Impact.Action.PUBLISH, Impact.Action.WITHDRAW),
                 service.history(ID).stream().map(Impact.Event::action).toList());
         for (Impact.Event event : withdrawn.history()) {
-            assertEquals("synthetic-actor", event.actor());
+            assertEquals(event.action() == Impact.Action.APPROVE ? "synthetic-approver" : "synthetic-actor", event.actor());
             assertEquals(CLOCK.instant(), event.at());
             assertEquals("correlation", event.correlationId());
             assertEquals(ID, event.impactId());
@@ -123,7 +125,7 @@ class ImpactServiceTests {
 
     @Test
     void corruptedPublicationPointersOrUnapprovedRowsNeverBecomePublic() {
-        Impact.Version version = new Impact.Version(1, CONTENT, SOURCE, "actor", CLOCK.instant(), null);
+        Impact.Version version = new Impact.Version(1, CONTENT, SOURCE, "actor", CLOCK.instant(), null, false);
         Impact unapproved = new Impact(ID, 1, Map.of(1L, version), 1L, List.of());
         assertEquals(404, assertThrows(ImpactFailure.class,
                 () -> service(repository(() -> Optional.of(unapproved)), ALLOW).publicVersion(ID)).status());
@@ -148,7 +150,7 @@ class ImpactServiceTests {
             public boolean replace(UUID id, long revision, Impact impact) { throw new IllegalStateException("private"); }
         };
         assertEquals(503, assertThrows(ImpactFailure.class,
-                () -> service(broken, ALLOW).approve(ID, 1, 1, "c")).status());
+                () -> service(broken, access(() -> Optional.of("synthetic-approver"), true)).approve(ID, 1, 1, "c")).status());
         assertEquals(1, delegate.find(ID).orElseThrow().history().size());
         assertNull(delegate.find(ID).orElseThrow().versions().get(1L).approval());
     }
