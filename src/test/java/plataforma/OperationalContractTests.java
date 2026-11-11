@@ -33,6 +33,7 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.availability.AvailabilityChangeEvent;
 import org.springframework.boot.availability.LivenessState;
 import org.springframework.boot.availability.ReadinessState;
+import org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -136,7 +137,7 @@ class OperationalContractTests {
             }
         }
         requestMappingHandlerMapping.getHandlerMethods().forEach((mapping, handler) -> {
-            if (!handler.getBeanType().getPackageName().startsWith("plataforma.")) {
+            if (handler.getBeanType() == BasicErrorController.class) {
                 return;
             }
             assertTrue(!mapping.getMethodsCondition().getMethods().isEmpty(),
