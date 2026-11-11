@@ -35,6 +35,7 @@
         }
       ],
       "get": {
+        "security": [{ "bearer": [] }],
         "operationId": "syntheticRead",
         "parameters": [
           {
@@ -258,6 +259,7 @@
         }
       },
       "post": {
+        "security": [{ "bearer": [] }],
         "operationId": "syntheticWrite",
         "requestBody": {
           "required": true,

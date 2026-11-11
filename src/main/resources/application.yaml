@@ -1,6 +1,34 @@
 spring:
   application:
     name: plataforma-backend
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/plataforma}
+    username: ${DB_USERNAME:plataforma}
+    password: ${DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # O schema pertence ao repositório plataforma-database; o backend apenas valida.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  data:
+    web:
+      pageable:
+        max-page-size: 100
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
+server:
+  error:
+    include-binding-errors: never
+    include-exception: false
+    include-message: never
+    include-stacktrace: never
 management:
   endpoints:
     web:
@@ -10,3 +38,46 @@ management:
     health:
       probes:
         enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+logging:
+  structured:
+    format:
+      console: logstash
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+platform:
+  security:
+    password:
+      argon2:
+        # Defaults mínimos OWASP; a calibrar no ambiente alvo antes de produção.
+        memory-kib: ${ARGON2_MEMORY_KIB:19456}
+        iterations: ${ARGON2_ITERATIONS:2}
+        parallelism: ${ARGON2_PARALLELISM:1}
+        salt-length: ${ARGON2_SALT_LENGTH:16}
+        hash-length: ${ARGON2_HASH_LENGTH:32}
+        # Independent limits for safe verification of stored PHC hashes; configurable per environment.
+        hash-sanity:
+          min-memory-kib: ${ARGON2_HASH_MIN_MEMORY_KIB:8}
+          max-memory-kib: ${ARGON2_HASH_MAX_MEMORY_KIB:262144}
+          min-iterations: ${ARGON2_HASH_MIN_ITERATIONS:1}
+          max-iterations: ${ARGON2_HASH_MAX_ITERATIONS:10}
+          min-parallelism: ${ARGON2_HASH_MIN_PARALLELISM:1}
+          max-parallelism: ${ARGON2_HASH_MAX_PARALLELISM:16}
+          min-salt-length: ${ARGON2_HASH_MIN_SALT_LENGTH:16}
+          max-salt-length: ${ARGON2_HASH_MAX_SALT_LENGTH:128}
+          min-hash-length: ${ARGON2_HASH_MIN_HASH_LENGTH:16}
+          max-hash-length: ${ARGON2_HASH_MAX_HASH_LENGTH:128}
+  crud:
+    api:
+      # Os endpoints de CRUD ainda não exigem login (BE-004/BE-010): ficam desligados fora dos
+      # perfis local e test até a autenticação existir.
+      enabled: false
+  audit:
+    api:
+      # Leitura de auditoria fica desligada até existir RBAC server-side (BE-010).
+      enabled: false

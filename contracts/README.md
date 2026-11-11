@@ -7,27 +7,21 @@ baseline fixada em `../.governance-baseline`. Revisor da task: João.
 ## Escopo e autoridade
 
 `openapi.yaml` é o contrato local, versionado em OpenAPI 3.1 com JSON Schema
-2020-12, para os quatro endpoints operacionais existentes: health, liveness,
-readiness e info. O link de descoberta `/actuator`, o fallback `/error` e os
-comportamentos HTTP implícitos do framework não são APIs de domínio.
+2020-12, para as rotas operacionais e os controllers de CRUD e auditoria da develop. O link de descoberta do Actuator e o fallback de erro são infraestrutura do framework.
 
 O YAML é a fonte editável; `target/contracts/openapi.json` é um bundle derivado
 e não deve ser versionado ou editado. `info.version` identifica a versão deste
 contrato local, não uma aprovação dos contratos globais. O endereço HTTPS
 `api.example.test` é sintético: o cliente deve selecionar a URL do ambiente.
 
-Todos os endpoints atuais são públicos, declarados com `security: []`. Não há
-login, autorização ou recurso paginado implementado no bootstrap. O teste de
-segurança usa uma operação **sintética**, sem criar endpoints de negócio, e
-rejeita contratos protegidos sem security scheme, 401 e 403 com schema
-`application/problem+json`. Ele verifica documentação, não implementação RBAC.
+Cada operação declara security explicitamente. Os controllers atuais de CRUD e
+auditoria usam opções de ativação e ainda não implementam autenticação. O gate
+de contratos exige security scheme, 401 e 403 com application/problem+json
+nas operações protegidas. As probes mantêm o formato nativo do Actuator.
 
-O Actuator utiliza seu formato operacional nativo para 200/503; não convertemos
-suas probes em erros de domínio RFC 9457. Por esse motivo, o lint não exige uma
-resposta 4xx artificial nesses endpoints. Erros RFC 9457, paginação, header de
-correlação e detalhes de autenticação dos contratos de domínio dependem de
-definição/aprovação dos produtores e consumidores. Nenhum desses padrões foi
-inventado ou publicado como norma por esta implementação.
+Os componentes compartilhados descrevem o ProblemDetail, a correlação e o
+envelope paginado da develop. LoginRequest e LoginResponse são propostas para
+CONTRACT-AUTH-001. A rota de login depende da implementação de autenticação.
 
 ## Verificação local
 
@@ -49,7 +43,7 @@ O instalador aceita Windows/Linux/macOS em x64 e ARM64.
 npm ci
 npm run contracts:install-diff
 npm run contracts:verify
-npm run contracts:breaking -- origin/main
+npm run contracts:breaking -- origin/develop
 mvn verify
 npm audit --audit-level=high
 npm run spec-compliance

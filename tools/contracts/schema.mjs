@@ -38,7 +38,7 @@ export function assertSecurity(document) {
     for (const method of methods) {
       const operation = resolve(document, item)[method];
       if (!operation) continue;
-      const security = operation.security ?? document.security;
+      const security = operation.security;
       assert.ok(Array.isArray(security), `${method} ${path}: declarar security explicitamente`);
       if (security.length === 0) continue;
       assert.ok(security.every(requirement => Object.keys(requirement).length > 0),

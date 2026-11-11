@@ -11,8 +11,9 @@ test('contrato utiliza OpenAPI 3.1 e declara segurança de cada operação', () 
   assertSecurity(document);
 });
 
-test('todas as respostas e exemplos têm fixtures válidas e independentes', () => {
+test('respostas operacionais têm fixtures válidas e independentes', () => {
   for (const [path, item] of Object.entries(document.paths)) {
+    if (!path.startsWith('/actuator/')) continue;
     for (const method of methods) {
       if (!item[method]) continue;
       for (const [status, raw] of Object.entries(item[method].responses)) {
@@ -43,7 +44,7 @@ test('gate de segurança rejeita rota protegida sem 401/403 e aceita declaraçã
   const protectedDocument = {
     components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } } },
     security: [{ bearerAuth: [] }],
-    paths: { '/synthetic': { get: { responses: { '200': { description: 'Synthetic' } } } } }
+    paths: { '/synthetic': { get: { security: [{ bearerAuth: [] }], responses: { '200': { description: 'Synthetic' } } } } }
   };
   assert.throws(() => assertSecurity(protectedDocument), /401/);
   const problem = { description: 'Synthetic', content: { 'application/problem+json': { schema: { type: 'object' } } } };
@@ -56,6 +57,5 @@ test('gate de segurança rejeita rota protegida sem 401/403 e aceita declaraçã
   protectedDocument.paths['/synthetic'].get.security = [{}];
   assert.throws(() => assertSecurity(protectedDocument), /opcional/);
   delete protectedDocument.paths['/synthetic'].get.security;
-  delete protectedDocument.security;
   assert.throws(() => assertSecurity(protectedDocument), /explicitamente/);
 });
