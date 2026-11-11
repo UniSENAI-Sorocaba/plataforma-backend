@@ -59,7 +59,7 @@ public final class AuthorizationRoutes {
 
     public void verify(RequestMappingHandlerMapping mappings) {
         mappings.getHandlerMethods().forEach((mapping, handler) -> {
-            if (!applicationController(handler.getBeanType())) return;
+            if (frameworkController(handler.getBeanType())) return;
             if (mapping.getMethodsCondition().getMethods().isEmpty()) invalid();
             mapping.getPatternValues().forEach(path -> mapping.getMethodsCondition().getMethods().forEach(method -> {
                 if (find(method.name(), path) == null) {
@@ -70,7 +70,14 @@ public final class AuthorizationRoutes {
     }
 
     public List<Rule> definitions() { return List.copyOf(rules.values()); }
-    public static boolean applicationController(Class<?> type) { return type.getPackageName().startsWith("br.senai.plataformadigital"); }
+    private static boolean frameworkController(Class<?> type) {
+        return Set.of(
+                "org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController",
+                "org.springdoc.webmvc.api.OpenApiWebMvcResource",
+                "org.springdoc.webmvc.api.MultipleOpenApiWebMvcResource",
+                "org.springdoc.webmvc.ui.SwaggerWelcomeWebMvc",
+                "org.springdoc.webmvc.ui.SwaggerConfigResource").contains(type.getName());
+    }
     private static String key(String method, String path) { return method + " " + path; }
     private static boolean blank(String value) { return value == null || value.isBlank(); }
     private static void invalid() { throw new IllegalStateException("Catálogo de autorização inválido ou ambíguo"); }

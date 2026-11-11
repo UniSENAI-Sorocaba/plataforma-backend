@@ -1,16 +1,24 @@
 package br.senai.plataformadigital.auth.web;
 
-import br.senai.plataformadigital.auth.api.authorization.*;
+import br.senai.plataformadigital.auth.api.authorization.AuthenticatedSubject;
+import br.senai.plataformadigital.auth.api.authorization.AuthorizationAudit;
+import br.senai.plataformadigital.auth.api.authorization.AuthorizationDecision;
+import br.senai.plataformadigital.auth.api.authorization.AuthorizationRequest;
+import br.senai.plataformadigital.auth.api.authorization.AuthorizationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+import org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
+import plataforma.config.CorrelationIdFilter;
+import plataforma.exception.ApiExceptionHandler;
 
 public final class AuthorizationInterceptor implements HandlerInterceptor {
     private final AuthorizationRoutes routes;
@@ -29,47 +37,65 @@ public final class AuthorizationInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        if (!(handler instanceof HandlerMethod method) || !AuthorizationRoutes.applicationController(method.getBeanType())) return true;
-        String path = (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
-        AuthorizationRoutes.Rule rule = routes.find(request.getMethod(), path);
-        if (rule != null && rule.publicAccess()) return true;
-        Object established = request.getAttribute("request.correlationId");
-        String correlation = established instanceof String value ? value : request.getHeader("X-Correlation-Id");
-        if (correlation == null || !correlation.matches("[A-Za-z0-9._-]{1,64}")) correlation = UUID.randomUUID().toString();
-        request.setAttribute("request.correlationId", correlation);
-        response.setHeader("X-Correlation-Id", correlation);
-        response.setHeader("Cache-Control", "no-store");
-        AuthorizationDecision decision;
-        String actor = null;
-        if (rule == null) {
-            decision = AuthorizationDecision.DENIED;
-        } else {
-            Map<String, String> variables = (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-            if (variables == null) variables = Map.of();
-            String resource = rule.resourceVariable() == null ? rule.resource() : variables.get(rule.resourceVariable());
-            String scope = rule.scopeVariable() == null ? null : variables.get(rule.scopeVariable());
-            try {
-                var evaluation = service.evaluate(new AuthorizationRequest(rule.action(), resource, Optional.ofNullable(scope)));
-                decision = evaluation.decision();
-                actor = evaluation.subject().map(AuthenticatedSubject::id).orElse(null);
+        String path = null;
+        if (handler instanceof HandlerMethod method) {
+            if (method.getBeanType() == BasicErrorController.class && request.getDispatcherType() == DispatcherType.ERROR) {
+                return true;
             }
-            catch (RuntimeException invalidContext) { decision = AuthorizationDecision.UNAVAILABLE; }
+            path = (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
         }
+        AuthorizationRoutes.Rule rule = path == null ? null : routes.find(request.getMethod(), path);
+        if (rule != null && rule.publicAccess()) return true;
+
+        String correlation = CorrelationIdFilter.correlationId(request);
+        response.setHeader("Cache-Control", "no-store");
+        var evaluation = service.evaluateRoute(() -> rule == null ? null : context(request, rule));
+        AuthorizationDecision decision = evaluation.decision();
+        String actor = evaluation.subject().map(AuthenticatedSubject::id).orElse(null);
         try {
-            audit.record(new AuthorizationAudit.Event(request.getMethod(), path, rule == null ? null : rule.action(), actor, decision, correlation));
-        } catch (RuntimeException unavailable) { decision = AuthorizationDecision.UNAVAILABLE; }
-        metrics.counter("authorization.decisions", "outcome", decision.name()).increment();
+            audit.record(new AuthorizationAudit.Event(request.getMethod(), path, rule == null ? null : rule.action(),
+                    actor, decision, correlation));
+        } catch (RuntimeException unavailable) {
+            metrics.counter("rbac.audit.unavailable").increment();
+            if (decision.allowsAccess()) decision = AuthorizationDecision.UNAVAILABLE;
+        }
+        metrics.counter("rbac.decisions", "outcome", decision.name()).increment();
         if (decision.allowsAccess()) return true;
-        int status = decision == AuthorizationDecision.UNAUTHENTICATED ? 401 : decision == AuthorizationDecision.UNAVAILABLE ? 503 : 403;
-        response.setStatus(status);
-        if (status == 401) response.setHeader("WWW-Authenticate", "Bearer");
+
+        HttpStatus status;
+        String code;
+        String message;
+        switch (decision) {
+            case UNAUTHENTICATED -> {
+                status = HttpStatus.UNAUTHORIZED;
+                code = "UNAUTHENTICATED";
+                message = "Authentication is required";
+                response.setHeader("WWW-Authenticate", "Bearer");
+            }
+            case DENIED -> {
+                status = HttpStatus.FORBIDDEN;
+                code = "FORBIDDEN";
+                message = "You are not allowed to perform this action";
+            }
+            default -> {
+                status = HttpStatus.SERVICE_UNAVAILABLE;
+                code = "AUTHORIZATION_UNAVAILABLE";
+                message = "Autorização indisponível";
+            }
+        }
+        response.setStatus(status.value());
         response.setContentType("application/problem+json");
-        json.writeValue(response.getOutputStream(), Map.of("type", "about:blank", "status", status,
-                "title", org.springframework.http.HttpStatus.valueOf(status).getReasonPhrase(),
-                "detail", status == 401 ? "Autenticação necessária" : status == 403 ? "Acesso negado" : "Autorização indisponível",
-                "correlationId", correlation));
+        json.writeValue(response.getOutputStream(), ApiExceptionHandler.problem(status, code, message, request));
         return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private AuthorizationRequest context(HttpServletRequest request, AuthorizationRoutes.Rule rule) {
+        Map<String, String> variables = (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        if (variables == null) variables = Map.of();
+        String resource = rule.resourceVariable() == null ? rule.resource() : variables.get(rule.resourceVariable());
+        String scope = rule.scopeVariable() == null ? null : variables.get(rule.scopeVariable());
+        return new AuthorizationRequest(rule.action(), resource, Optional.ofNullable(scope));
     }
 }

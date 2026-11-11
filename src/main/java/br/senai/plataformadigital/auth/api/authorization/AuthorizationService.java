@@ -2,6 +2,7 @@ package br.senai.plataformadigital.auth.api.authorization;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * Orquestra identidade confiável e política explícita, sem concessão implícita.
@@ -25,6 +26,11 @@ public final class AuthorizationService {
 
     public Evaluation evaluate(AuthorizationRequest request) {
         Objects.requireNonNull(request, "Requisição de autorização obrigatória");
+        return evaluateRoute(() -> request);
+    }
+
+    /** Resolve o contexto da rota somente após confirmar a identidade. */
+    public Evaluation evaluateRoute(Supplier<AuthorizationRequest> context) {
         Optional<AuthenticatedSubject> subject = Optional.empty();
         try {
             subject = subjects.currentSubject();
@@ -34,7 +40,8 @@ public final class AuthorizationService {
             if (subject.isEmpty()) {
                 return new Evaluation(AuthorizationDecision.UNAUTHENTICATED, subject);
             }
-            return new Evaluation(policy.permits(subject.orElseThrow(), request)
+            AuthorizationRequest request = context.get();
+            return new Evaluation(request != null && policy.permits(subject.orElseThrow(), request)
                     ? AuthorizationDecision.ALLOWED : AuthorizationDecision.DENIED, subject);
         } catch (RuntimeException unavailable) {
             // Nunca converter falha da fonte em concessão ou expor sua mensagem ao consumidor.

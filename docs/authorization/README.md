@@ -13,15 +13,15 @@ não interpreta JWT sem o autenticador BE-004 e ignora papéis/subject em body,
 query ou headers arbitrários. O serviço distingue ALLOWED, UNAUTHENTICATED,
 DENIED e UNAVAILABLE. Somente ALLOWED libera o controller.
 
-AuthorizationInterceptor protege todos os HandlerMethods da aplicação. O catálogo
-precisa declarar cada método/rota. Uma rota desconhecida é negada; na inicialização,
-qualquer controller da aplicação sem classificação impede o startup. Métodos HTTP
-implícitos/irrestritos não passam no gate. HEAD usa a regra GET quando apropriado.
-Actuator e handlers técnicos do framework não são controllers de negócio.
+AuthorizationInterceptor protege os handlers MVC por padrão, incluindo arquivos
+estáticos e rotas funcionais. O catálogo classifica cada método dos controllers
+de negócio. Uma rota de controller sem classificação impede o startup. HEAD
+usa a regra GET quando apropriado. Actuator serve as probes configuradas em
+mapeamentos próprios. O despacho interno de erro preserva a resposta do framework.
 
 O interceptor retorna ProblemDetail RFC 9457 sanitizado: 401 para identidade
 ausente, 403 para negação e 503 para falha das fontes. Usa no-store, correlação
-validada e WWW-Authenticate em 401. Erros privados, tokens e payloads não são
+estabelecida pelo CorrelationIdFilter da BE-002 e WWW-Authenticate em 401. O corpo usa correlation_id. Erros privados, tokens e payloads não são
 copiados para respostas ou eventos.
 
 ## Catálogo técnico
@@ -48,17 +48,16 @@ ser fornecida pelo adapter institucional. Sem ela, o dispatcher considera as
 AuthorizationPolicyContribution dos módulos e exige exatamente uma responsável
 pela ação. Zero ou múltiplas contribuições negam acesso. Isso permite ligar
 políticas de domínio sem importar seus internals ou instalar permissões globais.
-O módulo continua responsável por consultar vínculos confiáveis/aprovados.
+O serviço de cada domínio deve autorizar recursos e escopos obtidos do corpo da requisição ou da persistência, incluindo criação e filtragem de listagens. O catálogo da develop bloqueia esses acessos até existir uma política institucional.
 
 ## Auditoria e métricas
 
 AuthorizationAudit recebe método, padrão de rota, ação, identidade autenticada,
 decisão e correlação. Não recebe token, body ou URI concreta com identificadores.
-É uma porta para BE-016; o padrão sem adapter não persiste auditoria. Se um adapter
-instalado falhar, o acesso é bloqueado com 503. A identidade do evento é a mesma
+É uma porta para BE-016; o padrão sem adapter não persiste auditoria. Uma falha de auditoria converte uma concessão em 503 e preserva 401/403 em recusas. A métrica rbac.audit.unavailable registra a falha. A identidade do evento é a mesma
 avaliada pelo serviço, não uma segunda interpretação de campos do cliente.
 
-authorization.decisions usa somente o outcome como tag, evitando cardinalidade
+rbac.decisions usa somente o outcome como tag, evitando cardinalidade
 e dados pessoais em labels. A retenção/armazenamento central não é reimplementada.
 
 ## Testes e evidências
