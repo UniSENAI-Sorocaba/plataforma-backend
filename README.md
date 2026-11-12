@@ -54,7 +54,10 @@ gerado, que você usa no passo seguinte.
 1. `POST /api/v1/notices`: crie um edital (datas `AAAA-MM-DD`, `advisorId` = professor).
 2. `POST /api/v1/enrollments`: inscreva um aluno no edital.
 3. `POST /api/v1/activities`: registre uma atividade com horas e a referência da evidência.
-4. `POST /api/v1/certificates`: registre o certificado da inscrição.
+4. `POST /api/v1/certificates`: emita o certificado da inscrição (`{ "enrollmentId": "<id>" }`). As horas
+   são a soma das atividades **aprovadas** e precisam cobrir a carga (`totalHours`) do edital; abaixo
+   disso a emissão retorna 409.
+5. `GET /api/v1/public/certificates/{id}?hash=<validationHash>`: valide o certificado como um visitante.
 
 As listagens (`GET` sem id) são paginadas, por exemplo `GET /api/v1/projects?page=0&size=20&sort=createdAt,desc`.
 O `sort` aceita qualquer campo do recurso.
@@ -116,7 +119,7 @@ Cada recurso tem os mesmos 7 arquivos, um em cada pasta. Use projetos como model
 | `Notice` | `extension.notice` | orientador → `UserAccount` |
 | `Enrollment` | `extension.enrollment` | → `Notice`, aluno → `UserAccount` |
 | `Activity` | `extension.activity` | → `Enrollment`, revisor → `UserAccount` |
-| `Certificate` | `extension.certificate` | → `Enrollment` (um certificado por inscrição) |
+| `Certificate` | `extension.certificate` | → `Enrollment` (no máximo um `VALID` por inscrição) |
 | `AuditEvent` | `public.audit_event` | — (já existe no `plataforma-database`, DB-001) |
 
 ```
@@ -139,6 +142,7 @@ Valores aceitos nos enums:
 | `status` (membro) | `INVITED`, `ACCEPTED`, `DECLINED` |
 | `status` (banca) | `SCHEDULED`, `IN_EVALUATION`, `COMPLETED` |
 | `status` (atividade) | `PENDING`, `APPROVED`, `REJECTED` |
+| `status` (certificado) | `VALID`, `REVOKED` |
 
 ## Endpoints
 
@@ -165,6 +169,8 @@ Todos os recursos têm o mesmo CRUD:
 | Certificados | `/api/v1/certificates` |
 | Auditoria (somente leitura) | `/api/v1/audit-events` |
 
+Exceção: certificados não têm `PUT` nem `DELETE` (veja [Certificados](#certificados-be-017)).
+
 Também existem `GET /actuator/health` (healthcheck) e, só no perfil `local`,
 `POST /api/v1/local/audit-events` para criar eventos de auditoria de teste.
 
@@ -175,6 +181,49 @@ rascunhos, versões, aprovação/publicação, retirada, consulta pública e ori
 restrita. O ciclo completo pode ser verificado com `mvn clean verify`.
 O perfil `impact-local` usa armazenamento temporário; produção exige os adapters
 de banco, identidade e permissões das tasks relacionadas.
+
+## Certificados (BE-017)
+
+| Método | Rota | Ação | Sucesso |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/certificates` | emitir para uma inscrição | 201 |
+| `GET` | `/api/v1/certificates` | listar (paginado) | 200 |
+| `GET` | `/api/v1/certificates/{id}` | buscar por id | 200 |
+| `POST` | `/api/v1/certificates/{id}/revocation` | revogar com motivo (`{ "reason": "..." }`) | 200 |
+| `GET` | `/api/v1/certificates/{id}/qr-code` | QR Code PNG com o link de validação | 200 |
+| `GET` | `/api/v1/public/certificates/{id}?hash=...` | validação pública, sem login | 200 |
+
+Regras:
+
+- emite somente se as horas aprovadas da inscrição forem iguais ou maiores que a carga do edital
+  (`totalHours`); as horas não vêm do cliente. Regra aguardando confirmação do PO;
+- no máximo um certificado `VALID` por inscrição (segunda emissão → 409). Depois de revogado, a
+  inscrição pode receber um novo certificado. A emissão trava a linha da inscrição para evitar duas
+  emissões simultâneas; o índice definitivo fica com a DB-013:
+  `create unique index on extension.certificate (enrollment_id) where status = 'VALID'`;
+- o conteúdo emitido é imutável: `validationHash` é o SHA-256 de
+  `plataforma-certificate:v1|enrollment=…|student=…|notice=…|hours=…|issuedAt=…`;
+- revogar não apaga o registro; revogar de novo → 409;
+- a validação pública exige id **e** hash e responde só `id`, `status`, `issuedAt` e `revokedAt`
+  (sem aluno, horas ou motivo, conforme AC-S3-06), com `Cache-Control: no-store`;
+- id inexistente, hash diferente e registro adulterado no banco respondem o mesmo 404.
+
+O link do QR Code vem de `platform.certificate.validation-url-template` (variável
+`CERTIFICATE_VALIDATION_URL_TEMPLATE`), que deve apontar para a página de validação do frontend e
+conter `{id}` e `{hash}`, por exemplo `https://<frontend>/certificados/validar?id={id}&hash={hash}`.
+**Não há valor padrão fora de `local`/`test`: sem a variável, a aplicação não sobe**, para nenhum QR
+ser impresso apontando para localhost. URL relativa ou sem `http(s)` também impede a inicialização.
+A validação pública é ligada por `platform.certificate.validation.enabled` (ligada em `local` e `test`).
+
+Autorização: as rotas estão no catálogo da BE-010 (`authorization/develop-routes.json`). A validação
+pública é `publicAccess: true`; as demais (`certificates:create`, `list`, `read`, `revoke`, `qr-code`)
+são negadas por padrão (401 sem login, 403 sem permissão) até existir a política de papéis.
+No contrato (`contracts/openapi.yaml`), `PUT`/`DELETE /api/v1/certificates/{id}` saíram e `hours` na
+emissão ficou `deprecated` (é ignorado): a remoção é uma incompatibilidade intencional que o gate da
+BE-003 acusa e precisa de aprovação.
+
+Ainda dependem de decisão do PO (SPEC-EXT-003): PDF, assinatura digital, validade, campos públicos,
+como evitar PDF falsificado com QR verdadeiro e quem pode emitir/revogar (matriz de papéis).
 
 ## Erros
 
@@ -239,6 +288,11 @@ mvn verify
 | `AuditEventIntegrationTests` | gravação e consulta de auditoria com `jsonb` |
 | `AuditEventControllerTest` | rotas de auditoria e resposta 404 |
 | `AuditEventServiceTest` | regras do service de auditoria (unitário) |
+| `CertificateIntegrationTests` | emissão, validação pública, QR, revogação e adulteração com PostgreSQL |
+| `CertificateServiceTest` | regras de emissão, revogação e validação (unitário) |
+| `CertificateHasherTest` | hash determinístico, formato canônico v1 e detecção de alteração |
+| `PublicCertificateControllerTest` | rota pública ligada/desligada e resposta mínima |
+| `QrCodeGeneratorTest` | o PNG gerado é lido de volta com o conteúdo correto |
 | `PlataformaDigitalApplicationTests` | a aplicação sobe |
 | `PasswordHasherTest` | hash Argon2id, sal distinto, verificação, rehash, persistência sem senha e saída de log capturada |
 | `Argon2CalibrationBenchmark` | benchmark manual; executar explicitamente, não roda na suíte Maven padrão |
@@ -272,7 +326,7 @@ As regras abaixo estão marcadas no código com `TODO BE-0xx`, o ID da task no b
 | BE-015 | `EvaluationService` | calcular `finalGrade` pela rubrica e consolidar a nota da banca |
 | BE-009 | `EnrollmentService` | respeitar janela do edital e elegibilidade |
 | BE-014 | `ActivityService` | deferir/indeferir com motivo e total de horas |
-| BE-017 | `CertificateService` | gerar hash/QR verificável e validação pública |
+| BE-017 | `CertificateService` | PDF, assinatura, validade e reemissão (aguardam o PO); política de papéis na emissão/revogação |
 
 Até BE-004 e BE-010, **os endpoints não exigem login**. Por isso os CRUDs, o Swagger e a consulta de
 auditoria ficam desligados no perfil padrão (produção). Quando a autenticação existir, remova a

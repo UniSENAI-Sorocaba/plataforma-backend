@@ -616,7 +616,7 @@ paths:
     post:
       tags:
       - Certificados
-      summary: Cria um certificado
+      summary: Emite um certificado para uma inscrição
       operationId: createCertificates
       requestBody:
         content:
@@ -636,42 +636,18 @@ paths:
               $ref: '#/components/headers/CorrelationId'
         '400':
           $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
         '409':
           $ref: '#/components/responses/Problem409'
         '415':
           $ref: '#/components/responses/Problem415'
       security: []
-      description: Disponível quando platform.crud.api.enabled está habilitado.
+      description: 'Disponível quando platform.crud.api.enabled está habilitado. As horas vêm das atividades aprovadas e precisam cobrir a carga do edital;
+        409 quando já existe certificado VALID ou as horas não alcançam a carga.'
       parameters:
       - $ref: '#/components/parameters/CorrelationId'
   /api/v1/certificates/{id}:
-    delete:
-      tags:
-      - Certificados
-      summary: Exclui um certificado
-      operationId: deleteCertificates
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - $ref: '#/components/parameters/CorrelationId'
-      responses:
-        '204':
-          description: No Content
-          headers:
-            X-Correlation-Id:
-              $ref: '#/components/headers/CorrelationId'
-        '400':
-          $ref: '#/components/responses/Problem400'
-        '404':
-          $ref: '#/components/responses/Problem404'
-        '409':
-          $ref: '#/components/responses/Problem409'
-      security: []
-      description: Disponível quando platform.crud.api.enabled está habilitado.
     get:
       tags:
       - Certificados
@@ -701,11 +677,43 @@ paths:
           $ref: '#/components/responses/Problem404'
       security: []
       description: Disponível quando platform.crud.api.enabled está habilitado.
-    put:
+  /api/v1/certificates/{id}/qr-code:
+    get:
       tags:
       - Certificados
-      summary: Atualiza um certificado
-      operationId: updateCertificates
+      summary: QR Code PNG com o link de validação pública
+      operationId: getCertificateQrCode
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            image/png:
+              schema:
+                type: string
+                contentMediaType: image/png
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+  /api/v1/certificates/{id}/revocation:
+    post:
+      tags:
+      - Certificados
+      summary: Revoga um certificado mantendo o registro
+      operationId: revokeCertificate
       parameters:
       - name: id
         in: path
@@ -718,7 +726,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CertificateRequest'
+              $ref: '#/components/schemas/CertificateRevocationRequest'
         required: true
       responses:
         '200':
@@ -739,7 +747,7 @@ paths:
         '415':
           $ref: '#/components/responses/Problem415'
       security: []
-      description: Disponível quando platform.crud.api.enabled está habilitado.
+      description: 'Disponível quando platform.crud.api.enabled está habilitado. 409 quando o certificado já está revogado.'
   /api/v1/enrollments:
     get:
       tags:
@@ -1650,6 +1658,47 @@ paths:
           $ref: '#/components/responses/Problem415'
       security: []
       description: Disponível quando platform.crud.api.enabled está habilitado.
+  /api/v1/public/certificates/{id}:
+    get:
+      tags:
+      - Certificados
+      summary: Valida publicamente um certificado pelo id e hash
+      operationId: validateCertificate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: hash
+        in: query
+        description: validationHash impresso no certificado/QR Code.
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificateValidationResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+            Cache-Control:
+              description: Sempre no-store.
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+      security: []
+      description: 'Rota pública, disponível quando platform.certificate.validation.enabled está habilitado.
+        Id inexistente, hash divergente e registro adulterado respondem o mesmo 404.'
   /api/v1/users:
     get:
       tags:
@@ -2183,9 +2232,10 @@ components:
         hours:
           type: integer
           format: int32
+          deprecated: true
+          description: Ignorado. As horas são calculadas pelo servidor a partir das atividades aprovadas (BE-017).
       required:
       - enrollmentId
-      - hours
     CertificateResponse:
       type: object
       properties:
@@ -2200,7 +2250,46 @@ components:
           format: int32
         validationHash:
           type: string
+        status:
+          type: string
+          enum:
+          - VALID
+          - REVOKED
         issuedAt:
+          type: string
+          format: date-time
+        revokedAt:
+          type: string
+          format: date-time
+        revocationReason:
+          type: string
+        validationUrl:
+          type: string
+          format: uri
+    CertificateRevocationRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 1
+      required:
+      - reason
+    CertificateValidationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - VALID
+          - REVOKED
+        issuedAt:
+          type: string
+          format: date-time
+        revokedAt:
           type: string
           format: date-time
     ExaminationBoardRequest:

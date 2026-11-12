@@ -8,20 +8,24 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import plataforma.dto.PageResponse;
 import plataforma.dto.CertificateRequest;
 import plataforma.dto.CertificateResponse;
+import plataforma.dto.CertificateRevocationRequest;
+import plataforma.dto.PageResponse;
 import plataforma.service.CertificateService;
 
+/**
+ * Gestão de certificados. Não há PUT nem DELETE: o conteúdo emitido é imutável e um certificado
+ * cancelado é revogado, não apagado.
+ */
 @RestController
 @ConditionalOnProperty(prefix = "platform.crud.api", name = "enabled", havingValue = "true")
 @RequestMapping("/api/v1/certificates")
@@ -36,9 +40,9 @@ public class CertificateController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Cria um certificado")
-    public CertificateResponse create(@Valid @RequestBody CertificateRequest request) {
-        return service.create(request);
+    @Operation(summary = "Emite o certificado de uma inscrição com horas aprovadas")
+    public CertificateResponse issue(@Valid @RequestBody CertificateRequest request) {
+        return service.issue(request);
     }
 
     @GetMapping
@@ -53,16 +57,16 @@ public class CertificateController {
         return service.findById(id);
     }
 
-    @PutMapping("/{id}")
-    @Operation(summary = "Atualiza um certificado")
-    public CertificateResponse update(@PathVariable UUID id, @Valid @RequestBody CertificateRequest request) {
-        return service.update(id, request);
+    @PostMapping("/{id}/revocation")
+    @Operation(summary = "Revoga um certificado, mantendo o registro")
+    public CertificateResponse revoke(@PathVariable UUID id,
+            @Valid @RequestBody CertificateRevocationRequest request) {
+        return service.revoke(id, request);
     }
 
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Exclui um certificado")
-    public void delete(@PathVariable UUID id) {
-        service.delete(id);
+    @GetMapping(value = "/{id}/qr-code", produces = MediaType.IMAGE_PNG_VALUE)
+    @Operation(summary = "QR Code (PNG) com o link de validação pública")
+    public byte[] qrCode(@PathVariable UUID id) {
+        return service.qrCode(id);
     }
 }
