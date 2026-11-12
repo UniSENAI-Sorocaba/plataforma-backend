@@ -88,10 +88,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(status, code, message, servletRequest);
     }
 
-    private ProblemDetail problem(HttpStatusCode status, String code, String message, HttpServletRequest request) {
+    public static ProblemDetail problem(HttpStatusCode status, String code, String message, HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, message);
         problem.setTitle(title(status));
-        problem.setType(URI.create("https://errors.plataforma.senai.br/" + code.toLowerCase()));
+        problem.setType(URI.create("https://errors.plataforma.senai.br/" + code.toLowerCase(java.util.Locale.ROOT)));
         problem.setProperty("code", code);
         problem.setProperty("message", message);
         problem.setProperty("correlation_id", CorrelationIdFilter.correlationId(request));
@@ -116,7 +116,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         };
     }
 
-    private String title(HttpStatusCode status) {
+    private static String title(HttpStatusCode status) {
         return switch (status.value()) {
             case 400 -> "Requisição inválida";
             case 401 -> "Não autenticado";

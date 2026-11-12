@@ -1,0 +1,5 @@
+[
+  {"method":"GET","path":"/__authorization/public","publicAccess":true},
+  {"method":"GET","path":"/__authorization/scopes/{scope}/records/{id}","publicAccess":false,"action":"synthetic:read","resourceVariable":"id","scopeVariable":"scope"},
+  {"method":"POST","path":"/__authorization/records","publicAccess":false,"action":"synthetic:create","resource":"synthetic-records"}
+]
