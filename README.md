@@ -168,6 +168,14 @@ Todos os recursos têm o mesmo CRUD:
 Também existem `GET /actuator/health` (healthcheck) e, só no perfil `local`,
 `POST /api/v1/local/audit-events` para criar eventos de auditoria de teste.
 
+### Impacto
+
+A implementação da BE-019 está em [`docs/impact/README.md`](docs/impact/README.md):
+rascunhos, versões, aprovação/publicação, retirada, consulta pública e origem
+restrita. O ciclo completo pode ser verificado com `mvn clean verify`.
+O perfil `impact-local` usa armazenamento temporário; produção exige os adapters
+de banco, identidade e permissões das tasks relacionadas.
+
 ## Erros
 
 Os erros seguem o padrão RFC 9457 (Problem Details):
