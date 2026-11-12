@@ -81,3 +81,6 @@ platform:
     api:
       # Leitura de auditoria fica desligada até existir RBAC server-side (BE-010).
       enabled: false
+auth:
+  password-recovery:
+    lifetime: ${AUTH_PASSWORD_RECOVERY_LIFETIME:PT20M}
