@@ -1,6 +1,27 @@
 spring:
   application:
     name: plataforma-backend
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/plataforma}
+    username: ${DB_USERNAME:plataforma}
+    password: ${DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  data:
+    web:
+      pageable:
+        max-page-size: 100
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
 management:
   endpoints:
     web:
@@ -10,3 +31,22 @@ management:
     health:
       probes:
         enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+logging:
+  structured:
+    format:
+      console: logstash
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+platform:
+  crud:
+    api:
+      enabled: false
+  audit:
+    api:
+      enabled: false
