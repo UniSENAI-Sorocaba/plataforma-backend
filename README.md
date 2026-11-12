@@ -273,3 +273,32 @@ propriedade `platform.crud.api.enabled` e as anotações `@ConditionalOnProperty
 ## Governança
 
 Consulte `.governance-baseline` antes de qualquer mudança. A tag declarada ainda precisa ser publicada no repositório de governança e resolver para o SHA registrado; até lá, o gate remoto de spec-compliance permanece uma pendência organizacional.
+
+## Contratos de API — BE-003
+
+O contrato local está em [`contracts/openapi.yaml`](contracts/openapi.yaml).
+As ferramentas de contrato usam Node.js 24.14+ da linha 24 e npm, somente em
+desenvolvimento/CI; o runtime do backend continua Java 21.
+
+```bash
+npm ci
+npm run contracts:install-diff
+npm run contracts:verify
+npm run contracts:breaking -- origin/develop
+mvn verify
+npm run spec-compliance
+```
+
+Para consumir os exemplos sem iniciar o backend:
+
+```bash
+npm run contracts:bundle
+npm run contracts:mock
+curl http://127.0.0.1:4010/actuator/health
+curl -H "Prefer: code=503, example=down" http://127.0.0.1:4010/actuator/health
+```
+
+Consulte [`contracts/README.md`](contracts/README.md) para escopo, limitações,
+compatibilidade e evidências. A BE-003 permanece pendente dos contratos globais
+e da publicação da tag de governança; a aprovação técnica local não dispensa
+esses requisitos.
