@@ -7,6 +7,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import br.senai.plataformadigital.auth.api.authorization.AuthenticatedSubject;
+import br.senai.plataformadigital.auth.api.authorization.AuthenticatedSubjectProvider;
+import br.senai.plataformadigital.auth.api.authorization.AuthorizationPolicy;
+import java.util.Optional;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import com.jayway.jsonpath.JsonPath;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -23,9 +29,23 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, ProjectCrudIntegrationTests.ProjectCrudAuthorization.class})
 @Testcontainers(disabledWithoutDocker = true)
 class ProjectCrudIntegrationTests {
+    @TestConfiguration(proxyBeanMethods = false)
+    static class ProjectCrudAuthorization {
+        @Bean
+        AuthenticatedSubjectProvider crudIdentity() {
+            return () -> Optional.of(
+                    new AuthenticatedSubject("synthetic-crud-user"));
+        }
+
+        @Bean
+        AuthorizationPolicy crudPolicy() {
+            return (subject, request) -> request.action().startsWith("projects:")
+                    || request.action().equals("users:create");
+        }
+    }
 
     @Autowired
     private MockMvc mockMvc;
