@@ -19,6 +19,13 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
+    @ExceptionHandler(ProjectRuleViolationException.class)
+    ProblemDetail handleProjectRuleViolation(ProjectRuleViolationException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Regra de negócio violada");
+        return problem;
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     ProblemDetail handleNotFound(ResourceNotFoundException ex) {
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
