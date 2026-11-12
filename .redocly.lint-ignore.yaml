@@ -1,0 +1,5 @@
+# Propostas compartilhadas, sem rota até a aprovação do CONTRACT-AUTH-001.
+contracts/openapi.yaml:
+  no-unused-components:
+    - '#/components/schemas/LoginRequest'
+    - '#/components/schemas/LoginResponse'

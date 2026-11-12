@@ -8,7 +8,8 @@ próximas sprints (veja [O que vem nas próximas sprints](#o-que-vem-nas-próxim
 
 ## Como rodar
 
-Requisito: **Docker**.
+Requisito: **Docker**. Antes de iniciar, copie `.env.example` para `.env` e defina `DB_PASSWORD`
+com um valor local exclusivo. O arquivo `.env` é ignorado pelo Git.
 
 ```bash
 docker compose up --build
@@ -18,7 +19,7 @@ Esse comando sobe dois containers:
 
 | Container | Porta | O que é |
 | --- | --- | --- |
-| `postgres` | 5432 | PostgreSQL 16 (usuário `plataforma`, senha `local-development-only`) |
+| `postgres` | 5432 | PostgreSQL 16 (usuário `plataforma`, credencial configurada localmente) |
 | `api` | 8080 | a API, compilada dentro da imagem |
 
 Quando subir, abra o **Swagger**: <http://localhost:8080/swagger-ui.html>.
@@ -167,6 +168,14 @@ Todos os recursos têm o mesmo CRUD:
 Também existem `GET /actuator/health` (healthcheck) e, só no perfil `local`,
 `POST /api/v1/local/audit-events` para criar eventos de auditoria de teste.
 
+### Impacto
+
+A implementação da BE-019 está em [`docs/impact/README.md`](docs/impact/README.md):
+rascunhos, versões, aprovação/publicação, retirada, consulta pública e origem
+restrita. O ciclo completo pode ser verificado com `mvn clean verify`.
+O perfil `impact-local` usa armazenamento temporário; produção exige os adapters
+de banco, identidade e permissões das tasks relacionadas.
+
 ## Erros
 
 Os erros seguem o padrão RFC 9457 (Problem Details):
@@ -195,11 +204,18 @@ auditoria por `platform.audit.api.enabled`.
 
 Conexão com o banco por variáveis de ambiente: `DB_URL`, `DB_USERNAME` e `DB_PASSWORD`.
 
+Os parâmetros de Argon2id podem ser ajustados por `ARGON2_MEMORY_KIB`, `ARGON2_ITERATIONS` e
+`ARGON2_PARALLELISM`. Os valores de partida no `.env.example` são os defaults mínimos da OWASP;
+devem ser tratados como **a calibrar no ambiente alvo** antes de produção. O fluxo de login local
+continua pendente da BE-004.
+
 Para rodar fora do Docker (com o Postgres do compose no ar):
 
 ```bash
-DB_PASSWORD=local-development-only mvn spring-boot:run -Dspring-boot.run.profiles=local
+mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
+
+Defina `DB_PASSWORD` previamente no ambiente local antes de executar o comando.
 
 ## Banco de dados
 
@@ -224,9 +240,23 @@ mvn verify
 | `AuditEventControllerTest` | rotas de auditoria e resposta 404 |
 | `AuditEventServiceTest` | regras do service de auditoria (unitário) |
 | `PlataformaDigitalApplicationTests` | a aplicação sobe |
+| `PasswordHasherTest` | hash Argon2id, sal distinto, verificação, rehash, persistência sem senha e saída de log capturada |
+| `Argon2CalibrationBenchmark` | benchmark manual; executar explicitamente, não roda na suíte Maven padrão |
+| `SecretRedactorTest` | sanitização de campos sensíveis e saída de log capturada |
+| `AuditEventMapperTest` | sanitização dos dados do evento antes de persistir e responder |
 
 Os testes de integração sobem um PostgreSQL real com Testcontainers: precisam do **Docker em
 execução**. Sem Docker, eles são pulados.
+
+## Secret scan
+
+O repositório estende as regras padrão do Gitleaks em `.gitleaks.toml`. Para escanear o conteúdo
+atual da árvore de trabalho, execute `gitleaks dir --redact .`.
+
+## Argon2id
+
+A política de hashing, limites anti-DoS para hashes salvos e instruções do benchmark manual estão em
+[`docs/security/argon2id.md`](docs/security/argon2id.md). O benchmark não roda no `mvn verify` padrão.
 
 ## O que vem nas próximas sprints
 
@@ -250,4 +280,38 @@ propriedade `platform.crud.api.enabled` e as anotações `@ConditionalOnProperty
 
 ## Governança
 
+A autorização HTTP da BE-010 está documentada em
+[`docs/authorization/README.md`](docs/authorization/README.md). Inclui negação
+por padrão, catálogo obrigatório de rotas, 401/403/503 e testes do interceptor.
+A política institucional depende da matriz aprovada, BE-004 e DB-006.
+
 Consulte `.governance-baseline` antes de qualquer mudança. A tag declarada ainda precisa ser publicada no repositório de governança e resolver para o SHA registrado; até lá, o gate remoto de spec-compliance permanece uma pendência organizacional.
+
+## Contratos de API — BE-003
+
+O contrato local está em [`contracts/openapi.yaml`](contracts/openapi.yaml).
+As ferramentas de contrato usam Node.js 24.14+ da linha 24 e npm, somente em
+desenvolvimento/CI; o runtime do backend continua Java 21.
+
+```bash
+npm ci
+npm run contracts:install-diff
+npm run contracts:verify
+npm run contracts:breaking -- origin/develop
+mvn verify
+npm run spec-compliance
+```
+
+Para consumir os exemplos sem iniciar o backend:
+
+```bash
+npm run contracts:bundle
+npm run contracts:mock
+curl http://127.0.0.1:4010/actuator/health
+curl -H "Prefer: code=503, example=down" http://127.0.0.1:4010/actuator/health
+```
+
+Consulte [`contracts/README.md`](contracts/README.md) para escopo, limitações,
+compatibilidade e evidências. A BE-003 permanece pendente dos contratos globais
+e da publicação da tag de governança; a aprovação técnica local não dispensa
+esses requisitos.
