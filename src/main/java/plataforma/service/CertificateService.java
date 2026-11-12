@@ -33,8 +33,9 @@ import plataforma.repository.CertificateRepository;
  * responde com o mínimo. Assinatura, validade, reemissão e PDF dependem de decisão do PO
  * (SPEC-EXT-003, AC-S3-10) e não foram inventados aqui.
  */
-// TODO BE-010 (review #45, item 1): exigir usuário autenticado; emitir/revogar só docente responsável
-// do edital (notice.advisor) ou coordenação; listar/buscar só os próprios (aluno) ou do edital (docente).
+// Autorização (review #45, item 1): as rotas estão no catálogo da BE-010 (develop-routes.json) e são
+// negadas por padrão. TODO matriz de papéis: emitir/revogar só docente responsável do edital
+// (notice.advisor) ou coordenação; listar/buscar só os próprios (aluno) ou do edital (docente).
 @Service
 @Transactional(readOnly = true)
 public class CertificateService {

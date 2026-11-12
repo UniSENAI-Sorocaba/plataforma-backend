@@ -9,12 +9,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import br.senai.plataformadigital.auth.api.authorization.AuthenticatedSubject;
+import br.senai.plataformadigital.auth.api.authorization.AuthenticatedSubjectProvider;
+import br.senai.plataformadigital.auth.api.authorization.AuthorizationPolicy;
 import com.jayway.jsonpath.JsonPath;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -26,9 +34,36 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, CertificateIntegrationTests.CertificateAuthorization.class})
 @Testcontainers(disabledWithoutDocker = true)
 class CertificateIntegrationTests {
+
+    /**
+     * Identidade e política sintéticas: o login (BE-004) e a matriz de papéis ainda não existem. Com
+     * {@code authenticated=false} a requisição chega sem usuário e a BE-010 deve negar.
+     */
+    @TestConfiguration(proxyBeanMethods = false)
+    static class CertificateAuthorization {
+        static final AtomicBoolean authenticated = new AtomicBoolean(true);
+
+        @Bean
+        AuthenticatedSubjectProvider certificateIdentity() {
+            return () -> authenticated.get() ? Optional.of(new AuthenticatedSubject("synthetic-certificate-user"))
+                    : Optional.empty();
+        }
+
+        @Bean
+        AuthorizationPolicy certificatePolicy() {
+            return (subject, request) -> request.action().startsWith("certificates:")
+                    || request.action().equals("users:create") || request.action().equals("notices:create")
+                    || request.action().equals("enrollments:create") || request.action().equals("activities:create");
+        }
+    }
+
+    @AfterEach
+    void restoreIdentity() {
+        CertificateAuthorization.authenticated.set(true);
+    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -43,8 +78,9 @@ class CertificateIntegrationTests {
         approveActivity(createActivity(enrollmentId, 10), 10);
         var pendente = createActivity(enrollmentId, 50); // pendente: não conta
 
+        // "hours" enviado pelo cliente é ignorado (campo deprecated no contrato): vale o que foi aprovado.
         var issued = mockMvc.perform(post("/api/v1/certificates").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"enrollmentId\": \"%s\"}".formatted(enrollmentId)))
+                        .content("{\"enrollmentId\": \"%s\", \"hours\": 999}".formatted(enrollmentId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.hours").value(35))
                 .andExpect(jsonPath("$.status").value("VALID"))
@@ -134,6 +170,32 @@ class CertificateIntegrationTests {
 
         mockMvc.perform(get("/api/v1/public/certificates/{id}", id).param("hash", hash))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void rotasInternasExigemLoginEValidacaoPublicaNao() throws Exception {
+        var enrollmentId = createEnrollment(5);
+        approveActivity(createActivity(enrollmentId, 5), 5);
+        var issued = mockMvc.perform(post("/api/v1/certificates").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enrollmentId\": \"%s\"}".formatted(enrollmentId)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String id = JsonPath.read(issued, "$.id");
+        String hash = JsonPath.read(issued, "$.validationHash");
+
+        CertificateAuthorization.authenticated.set(false);
+
+        mockMvc.perform(post("/api/v1/certificates").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enrollmentId\": \"%s\"}".formatted(enrollmentId)))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/certificates/{id}", id)).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/certificates/{id}/qr-code", id)).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/v1/certificates/{id}/revocation", id).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\": \"sem login\"}"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/public/certificates/{id}", id).param("hash", hash))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("VALID"));
     }
 
     private void approveActivity(String activityId, int hours) {
