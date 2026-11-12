@@ -1,4 +1,4 @@
-package br.senai.plataformadigital.auth.passwordrecovery;
+package plataforma.auth.passwordrecovery;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -8,11 +8,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.context.annotation.Profile;
 
 /**
  * Process-local adapter used by tests and local development until AUTH-10-DB
  * supplies the durable implementation.
  */
+@Profile("test")
 public final class InMemoryPasswordRecoveryTokenRepository implements PasswordRecoveryTokenRepository {
     private final Map<UUID, PasswordRecoveryToken> tokens = new ConcurrentHashMap<>();
 
@@ -30,17 +32,27 @@ public final class InMemoryPasswordRecoveryTokenRepository implements PasswordRe
     }
 
     @Override
-    public synchronized int revokeActiveBySubject(String subject, Instant revokedAt) {
-        Objects.requireNonNull(subject, "subject must not be null");
+    public synchronized int revokeActiveByUserId(UUID userId, Instant revokedAt) {
+        Objects.requireNonNull(userId, "userId must not be null");
         Objects.requireNonNull(revokedAt, "revokedAt must not be null");
         int revoked = 0;
         for (PasswordRecoveryToken token : tokens.values()) {
-            if (token.subject().equals(subject) && token.isActiveAt(revokedAt)) {
+            if (token.userId().equals(userId) && token.isActiveAt(revokedAt)) {
                 tokens.put(token.id(), token.markRevokedAt(revokedAt));
                 revoked++;
             }
         }
         return revoked;
+    }
+
+    @Override
+    public synchronized long countIssuedSince(UUID userId, Instant since) {
+        Objects.requireNonNull(userId, "userId must not be null");
+        Objects.requireNonNull(since, "since must not be null");
+        return tokens.values().stream()
+                .filter(token -> token.userId().equals(userId))
+                .filter(token -> !token.issuedAt().isBefore(since))
+                .count();
     }
 
     @Override

@@ -50,3 +50,6 @@ platform:
   audit:
     api:
       enabled: false
+auth:
+  password-recovery:
+    lifetime: ${AUTH_PASSWORD_RECOVERY_LIFETIME:PT20M}

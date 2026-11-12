@@ -1,4 +1,4 @@
-package br.senai.plataformadigital.auth.passwordrecovery;
+package plataforma.auth.passwordrecovery;
 
 import java.time.Instant;
 import java.util.Objects;

@@ -20,6 +20,7 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import plataforma.config.CorrelationIdFilter;
+import plataforma.auth.passwordrecovery.InvalidPasswordRecoveryTokenException;
 
 /** RFC 9457 errors that preserve Spring's status for framework failures. */
 @RestControllerAdvice
@@ -38,6 +39,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     ResponseEntity<ProblemDetail> authentication(AuthenticationException ex, HttpServletRequest request) { return response(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "Authentication is required", request); }
     @ExceptionHandler(AccessDeniedException.class)
     ResponseEntity<ProblemDetail> authorization(AccessDeniedException ex, HttpServletRequest request) { return response(HttpStatus.FORBIDDEN, "FORBIDDEN", "You are not allowed to perform this action", request); }
+    @ExceptionHandler(InvalidPasswordRecoveryTokenException.class)
+    ResponseEntity<ProblemDetail> invalidPasswordRecoveryToken(InvalidPasswordRecoveryTokenException ex, HttpServletRequest request) { return response(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Request is invalid", request); }
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {

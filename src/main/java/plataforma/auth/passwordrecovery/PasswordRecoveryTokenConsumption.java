@@ -1,27 +1,28 @@
-package br.senai.plataformadigital.auth.passwordrecovery;
+package plataforma.auth.passwordrecovery;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.UUID;
 
 /** Result of the atomic, single-use transition used by a password reset flow. */
 public final class PasswordRecoveryTokenConsumption {
     private final PasswordRecoveryTokenStatus status;
-    private final String subject;
+    private final UUID userId;
     private final Instant consumedAt;
 
     private PasswordRecoveryTokenConsumption(
             PasswordRecoveryTokenStatus status,
-            String subject,
+            UUID userId,
             Instant consumedAt) {
         this.status = Objects.requireNonNull(status, "status must not be null");
-        this.subject = subject;
+        this.userId = userId;
         this.consumedAt = consumedAt;
     }
 
-    static PasswordRecoveryTokenConsumption consumed(String subject, Instant consumedAt) {
+    static PasswordRecoveryTokenConsumption consumed(UUID userId, Instant consumedAt) {
         return new PasswordRecoveryTokenConsumption(
                 PasswordRecoveryTokenStatus.CONSUMED,
-                Objects.requireNonNull(subject, "subject must not be null"),
+                Objects.requireNonNull(userId, "userId must not be null"),
                 Objects.requireNonNull(consumedAt, "consumedAt must not be null"));
     }
 
@@ -40,11 +41,11 @@ public final class PasswordRecoveryTokenConsumption {
         return status == PasswordRecoveryTokenStatus.CONSUMED;
     }
 
-    public String subject() {
+    public UUID userId() {
         if (!isConsumed()) {
-            throw new IllegalStateException("subject is available only after successful consumption");
+            throw new IllegalStateException("userId is available only after successful consumption");
         }
-        return subject;
+        return userId;
     }
 
     public Instant consumedAt() {
@@ -54,6 +55,6 @@ public final class PasswordRecoveryTokenConsumption {
     @Override
     public String toString() {
         return "PasswordRecoveryTokenConsumption{status=" + status
-                + ", consumedAt=" + consumedAt + ", subject=<redacted>}";
+                + ", consumedAt=" + consumedAt + ", userId=" + userId + "}";
     }
 }

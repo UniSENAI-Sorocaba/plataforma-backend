@@ -1,10 +1,11 @@
-package br.senai.plataformadigital.auth.passwordrecovery;
+package plataforma.auth.passwordrecovery;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
@@ -44,27 +45,48 @@ public final class PasswordRecoveryTokenService {
         this.secureRandom = Objects.requireNonNull(secureRandom, "secureRandom must not be null");
     }
 
-    /** Issues a token for a normalized account subject, revoking older active tokens first. */
-    public synchronized IssuedPasswordRecoveryToken issueForSubject(String subject) {
-        String normalizedSubject = normalizeSubject(subject);
+    /** Issues a token for a user, revoking older active tokens first. */
+    public synchronized IssuedPasswordRecoveryToken issueForUser(UUID userId) {
+        return issueForUser(userId, clock.instant());
+    }
+
+    /**
+     * Issues at most {@code maximum} tokens for a user during the supplied window.
+     * The check and issuance are serialized so concurrent requests cannot bypass it.
+     */
+    public synchronized Optional<IssuedPasswordRecoveryToken> issueForUserWithinRateLimit(
+            UUID userId,
+            int maximum,
+            Duration window) {
+        Objects.requireNonNull(userId, "userId must not be null");
+        Objects.requireNonNull(window, "window must not be null");
+        if (maximum < 1) {
+            throw new IllegalArgumentException("maximum must be positive");
+        }
+        if (window.isZero() || window.isNegative()) {
+            throw new IllegalArgumentException("window must be positive");
+        }
         Instant issuedAt = clock.instant();
-        repository.revokeActiveBySubject(normalizedSubject, issuedAt);
+        if (repository.countIssuedSince(userId, issuedAt.minus(window)) >= maximum) {
+            return Optional.empty();
+        }
+        return Optional.of(issueForUser(userId, issuedAt));
+    }
+
+    private IssuedPasswordRecoveryToken issueForUser(UUID userId, Instant issuedAt) {
+        Objects.requireNonNull(userId, "userId must not be null");
+        repository.revokeActiveByUserId(userId, issuedAt);
 
         String rawToken = generateRawToken();
         Instant expiresAt = issuedAt.plus(policy.lifetime());
         PasswordRecoveryToken stored = PasswordRecoveryToken.issued(
                 UUID.randomUUID(),
-                normalizedSubject,
+                userId,
                 hash(rawToken),
                 issuedAt,
                 expiresAt);
         repository.save(stored);
         return new IssuedPasswordRecoveryToken(rawToken, expiresAt);
-    }
-
-    /** Convenience name for account integrations whose subject is an e-mail address. */
-    public IssuedPasswordRecoveryToken issueForEmail(String email) {
-        return issueForSubject(email);
     }
 
     public PasswordRecoveryTokenValidation validate(String rawToken) {
@@ -81,7 +103,7 @@ public final class PasswordRecoveryTokenService {
         return validate(rawToken).isValid();
     }
 
-    /** Atomically marks an active token as used and returns its subject to the reset flow. */
+    /** Atomically marks an active token as used and returns its user id to the reset flow. */
     public PasswordRecoveryTokenConsumption consume(String rawToken) {
         if (rawToken == null || rawToken.isBlank()) {
             return PasswordRecoveryTokenConsumption.rejected(PasswordRecoveryTokenStatus.NOT_FOUND);
@@ -90,7 +112,7 @@ public final class PasswordRecoveryTokenService {
         Optional<PasswordRecoveryToken> consumed = repository.consumeIfActive(hash(rawToken), now);
         if (consumed.isPresent()) {
             PasswordRecoveryToken token = consumed.orElseThrow();
-            return PasswordRecoveryTokenConsumption.consumed(token.subject(), now);
+            return PasswordRecoveryTokenConsumption.consumed(token.userId(), now);
         }
         return PasswordRecoveryTokenConsumption.rejected(validate(rawToken).status());
     }
@@ -103,16 +125,16 @@ public final class PasswordRecoveryTokenService {
         return repository.revokeIfActive(hash(rawToken), clock.instant());
     }
 
-    /** Revokes all active tokens belonging to one normalized account subject. */
-    public int revokeForSubject(String subject) {
-        return repository.revokeActiveBySubject(normalizeSubject(subject), clock.instant());
+    /** Revokes all active tokens belonging to one user. */
+    public int revokeForUser(UUID userId) {
+        return repository.revokeActiveByUserId(Objects.requireNonNull(userId, "userId must not be null"), clock.instant());
     }
 
-    static String normalizeSubject(String subject) {
-        if (subject == null || subject.isBlank()) {
-            throw new IllegalArgumentException("subject must not be blank");
+    static String normalizeEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("email must not be blank");
         }
-        return subject.trim().toLowerCase(Locale.ROOT);
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 
     private Optional<PasswordRecoveryToken> find(String rawToken) {

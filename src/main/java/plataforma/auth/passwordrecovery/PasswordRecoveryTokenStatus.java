@@ -1,4 +1,4 @@
-package br.senai.plataformadigital.auth.passwordrecovery;
+package plataforma.auth.passwordrecovery;
 
 /** Internal lifecycle state of a password-recovery token. */
 public enum PasswordRecoveryTokenStatus {

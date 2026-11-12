@@ -1,4 +1,4 @@
-package br.senai.plataformadigital.auth.passwordrecovery;
+package plataforma.auth.passwordrecovery;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -12,7 +12,7 @@ import java.util.UUID;
  */
 public final class PasswordRecoveryToken {
     private final UUID id;
-    private final String subject;
+    private final UUID userId;
     private final String tokenHash;
     private final Instant issuedAt;
     private final Instant expiresAt;
@@ -21,14 +21,14 @@ public final class PasswordRecoveryToken {
 
     private PasswordRecoveryToken(
             UUID id,
-            String subject,
+            UUID userId,
             String tokenHash,
             Instant issuedAt,
             Instant expiresAt,
             Instant usedAt,
             Instant revokedAt) {
         this.id = Objects.requireNonNull(id, "id must not be null");
-        this.subject = Objects.requireNonNull(subject, "subject must not be null");
+        this.userId = Objects.requireNonNull(userId, "userId must not be null");
         this.tokenHash = Objects.requireNonNull(tokenHash, "tokenHash must not be null");
         this.issuedAt = Objects.requireNonNull(issuedAt, "issuedAt must not be null");
         this.expiresAt = Objects.requireNonNull(expiresAt, "expiresAt must not be null");
@@ -50,19 +50,19 @@ public final class PasswordRecoveryToken {
 
     public static PasswordRecoveryToken issued(
             UUID id,
-            String subject,
+            UUID userId,
             String tokenHash,
             Instant issuedAt,
             Instant expiresAt) {
-        return new PasswordRecoveryToken(id, subject, tokenHash, issuedAt, expiresAt, null, null);
+        return new PasswordRecoveryToken(id, userId, tokenHash, issuedAt, expiresAt, null, null);
     }
 
     public UUID id() {
         return id;
     }
 
-    public String subject() {
-        return subject;
+    public UUID userId() {
+        return userId;
     }
 
     public String tokenHash() {
@@ -92,17 +92,17 @@ public final class PasswordRecoveryToken {
 
     PasswordRecoveryToken markUsedAt(Instant timestamp) {
         Objects.requireNonNull(timestamp, "timestamp must not be null");
-        return new PasswordRecoveryToken(id, subject, tokenHash, issuedAt, expiresAt, timestamp, null);
+        return new PasswordRecoveryToken(id, userId, tokenHash, issuedAt, expiresAt, timestamp, null);
     }
 
     PasswordRecoveryToken markRevokedAt(Instant timestamp) {
         Objects.requireNonNull(timestamp, "timestamp must not be null");
-        return new PasswordRecoveryToken(id, subject, tokenHash, issuedAt, expiresAt, null, timestamp);
+        return new PasswordRecoveryToken(id, userId, tokenHash, issuedAt, expiresAt, null, timestamp);
     }
 
     @Override
     public String toString() {
-        return "PasswordRecoveryToken{id=" + id + ", issuedAt=" + issuedAt
+        return "PasswordRecoveryToken{id=" + id + ", userId=" + userId + ", issuedAt=" + issuedAt
                 + ", expiresAt=" + expiresAt + ", used=" + (usedAt != null)
                 + ", revoked=" + (revokedAt != null) + "}";
     }

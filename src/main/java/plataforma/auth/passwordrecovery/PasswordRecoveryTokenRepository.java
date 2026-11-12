@@ -1,7 +1,8 @@
-package br.senai.plataformadigital.auth.passwordrecovery;
+package plataforma.auth.passwordrecovery;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 /** Persistence port for hashed password-recovery tokens. */
 public interface PasswordRecoveryTokenRepository {
@@ -10,7 +11,9 @@ public interface PasswordRecoveryTokenRepository {
 
     void save(PasswordRecoveryToken token);
 
-    int revokeActiveBySubject(String subject, Instant revokedAt);
+    int revokeActiveByUserId(UUID userId, Instant revokedAt);
+
+    long countIssuedSince(UUID userId, Instant since);
 
     Optional<PasswordRecoveryToken> consumeIfActive(String tokenHash, Instant consumedAt);
 
