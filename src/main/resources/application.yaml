@@ -1,6 +1,14 @@
 spring:
   application:
     name: plataforma-backend
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+security:
+  jwt:
+    issuer: ${JWT_ISSUER:plataforma-digital}
+    public-key: ${JWT_PUBLIC_KEY:}
+    private-key: ${JWT_PRIVATE_KEY:}
 management:
   endpoints:
     web:

@@ -22,6 +22,10 @@ curl http://localhost:8080/actuator/health
 mvn verify
 ```
 
+## Chaves JWT
+
+O serviço de autenticação lê `JWT_PUBLIC_KEY` e `JWT_PRIVATE_KEY` como chaves RSA em formato PEM (`PUBLIC KEY` e `PRIVATE KEY`, respectivamente). Configure-as por um mecanismo seguro de ambiente/secret manager; não versione chaves privadas. `JWT_ISSUER` é opcional e, quando omitida, usa `plataforma-digital`.
+
 ## Governança
 
 Consulte `.governance-baseline` antes de qualquer mudança. A tag declarada ainda precisa ser publicada no repositório de governança e resolver para o SHA registrado; até lá, o gate remoto de spec-compliance permanece uma pendência organizacional.
