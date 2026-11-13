@@ -22,13 +22,31 @@ Esse comando sobe dois containers:
 | `postgres` | 5432 | PostgreSQL 16 (usuário `plataforma`, credencial configurada localmente) |
 | `api` | 8080 | a API, compilada dentro da imagem |
 
-Quando subir, abra o **Swagger**: <http://localhost:8080/swagger-ui.html>.
+### Verificando a saúde
+
+Quando os containers subirem, as probes do Actuator respondem sem autenticação:
+
+```bash
+curl http://localhost:8080/actuator/health            # {"status":"UP","groups":["liveness","readiness"]}
+curl http://localhost:8080/actuator/health/liveness   # {"status":"UP"}
+curl http://localhost:8080/actuator/health/readiness  # {"status":"UP"}
+```
+
+O contrato dessas rotas está em [`contracts/openapi.yaml`](contracts/openapi.yaml).
+
+> **Atenção:** desde a BE-010 (autorização com negação por padrão), toda rota que não está no catálogo
+> de autorização responde **401**. Isso inclui o Swagger (`/swagger-ui.html`, `/v3/api-docs`) e os CRUDs
+> abaixo, mesmo no perfil `local`. Só as probes de saúde são públicas. O passo a passo da seção
+> seguinte só volta a funcionar quando existirem autenticação (BE-004) e a classificação dessas rotas
+> no catálogo (`docs/authorization/README.md`).
 
 - Parar: `docker compose down`
 - Parar e apagar os dados do banco: `docker compose down -v`
 - Ver os logs da API: `docker compose logs -f api`
 
 ## Testando pelo Swagger
+
+> Hoje as rotas abaixo respondem 401, pelo motivo explicado em [Verificando a saúde](#verificando-a-saúde).
 
 Os recursos dependem uns dos outros pelo `id`, então crie nesta ordem. Cada `POST` devolve o `id`
 gerado, que você usa no passo seguinte.
@@ -204,6 +222,10 @@ auditoria por `platform.audit.api.enabled`.
 
 Conexão com o banco por variáveis de ambiente: `DB_URL`, `DB_USERNAME` e `DB_PASSWORD`.
 
+**`DB_PASSWORD` é obrigatória.** Sem ela a aplicação não sobe e termina com a mensagem
+`Required configuration missing: set DB_PASSWORD with the database password (see .env.example).`,
+antes de tentar conectar. Nenhuma credencial é versionada: o `application.yaml` só lê a variável.
+
 Os parâmetros de Argon2id podem ser ajustados por `ARGON2_MEMORY_KIB`, `ARGON2_ITERATIONS` e
 `ARGON2_PARALLELISM`. Os valores de partida no `.env.example` são os defaults mínimos da OWASP;
 devem ser tratados como **a calibrar no ambiente alvo** antes de produção. O fluxo de login local
@@ -274,9 +296,11 @@ As regras abaixo estão marcadas no código com `TODO BE-0xx`, o ID da task no b
 | BE-014 | `ActivityService` | deferir/indeferir com motivo e total de horas |
 | BE-017 | `CertificateService` | gerar hash/QR verificável e validação pública |
 
-Até BE-004 e BE-010, **os endpoints não exigem login**. Por isso os CRUDs, o Swagger e a consulta de
-auditoria ficam desligados no perfil padrão (produção). Quando a autenticação existir, remova a
-propriedade `platform.crud.api.enabled` e as anotações `@ConditionalOnProperty` dos controllers.
+Os CRUDs, o Swagger e a consulta de auditoria ficam desligados no perfil padrão (produção) e só são
+registrados em `local` e `test`. Mesmo registrados, a autorização da BE-010 nega por padrão o que não está
+no catálogo, então eles respondem 401 até a autenticação (BE-004) e a classificação das rotas existirem.
+Nesse momento, remova a propriedade `platform.crud.api.enabled` e as anotações `@ConditionalOnProperty`
+dos controllers.
 
 ## Governança
 
