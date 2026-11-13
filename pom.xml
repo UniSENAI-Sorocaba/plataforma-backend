@@ -23,9 +23,9 @@
   </properties>
   <dependencies>
     <dependency>
+      <!-- Springdoc precisa desta classe em execução (perfil local). Com escopo test o jar fica sem ela. -->
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
