@@ -1,0 +1,327 @@
+{
+  "openapi": "3.1.0",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "AUTH-08-BE — Perfil e permissões do usuário autenticado",
+    "version": "0.1.0",
+    "description": "Proposta para revisão (Draft); não substitui CONTRACT-AUTH-001 nem a aprovação de PG-006. Entrega ao frontend os dados necessários para montar menus e redirecionar por perfil (AUTH-08-FE-02 e AUTH-08-FE-03). A identidade vem do access token validado pela BE-004; esta API não emite nem valida o token. A matriz de perfis e ações (SPEC-AUTH-003) ainda é Draft: `permissions` carrega identificadores de ação do catálogo de autorização da BE-010, e os valores concedidos a cada perfil dependem da política institucional aprovada. Os exemplos são sintéticos e não representam permissões aprovadas."
+  },
+  "servers": [
+    {
+      "url": "https://api.example.test",
+      "description": "Endereço sintético; usar o endereço do ambiente."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Identidade e perfil do usuário autenticado"
+    }
+  ],
+  "paths": {
+    "/api/v1/auth/me": {
+      "get": {
+        "operationId": "readCurrentProfile",
+        "summary": "Perfil e permissões do usuário autenticado",
+        "description": "Devolve quem é o usuário do token e o que o perfil dele pode fazer. O frontend usa `role` para redirecionar após o login e `permissions` para exibir apenas as opções permitidas. A decisão de acesso continua no servidor: esconder uma opção no menu não substitui a autorização de cada rota.",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "description": "Opcional. A aplicação gera outro identificador quando ausente ou inválido.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Perfil do usuário autenticado",
+            "headers": {
+              "X-Correlation-Id": {
+                "description": "Identificador de correlação da requisição.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentProfile"
+                },
+                "examples": {
+                  "synthetic": {
+                    "value": {
+                      "id": "3f1c0a52-8b0e-4c61-9d0f-2f2d8a5c7e11",
+                      "fullName": "Aluno Sintético",
+                      "role": "STUDENT",
+                      "permissions": [
+                        "projects:read",
+                        "projects:create"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Identidade validada pela BE-004; sem o autenticador, a rota responde 401."
+      }
+    },
+    "schemas": {
+      "Role": {
+        "type": "string",
+        "description": "Perfis de acesso da plataforma. Cada usuário tem um único perfil.",
+        "enum": [
+          "STUDENT",
+          "PROFESSOR",
+          "COORDINATOR",
+          "CPA",
+          "ADMIN"
+        ]
+      },
+      "CurrentProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "fullName",
+          "role",
+          "permissions"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Identificador do usuário; é o `subject` do access token."
+          },
+          "fullName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "Nome para exibir no cabeçalho da área autenticada."
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "permissions": {
+            "type": "array",
+            "uniqueItems": true,
+            "maxItems": 200,
+            "description": "Ações do catálogo de autorização que o perfil pode executar, no formato `recurso:ação`. Lista vazia significa nenhuma permissão. O frontend deve tratar uma ação ausente como negada.",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*(:[a-z][a-z0-9-]*)+$",
+              "maxLength": 100
+            }
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "code",
+          "message",
+          "correlation_id"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "correlation_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Error401": {
+        "description": "Não autenticado",
+        "headers": {
+          "X-Correlation-Id": {
+            "description": "Identificador de correlação da requisição.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$"
+            }
+          },
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          },
+          "WWW-Authenticate": {
+            "schema": {
+              "type": "string",
+              "const": "Bearer"
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "examples": {
+              "synthetic": {
+                "value": {
+                  "type": "https://errors.plataforma.senai.br/unauthenticated",
+                  "title": "Não autenticado",
+                  "status": 401,
+                  "detail": "Mensagem pública sanitizada",
+                  "code": "UNAUTHENTICATED",
+                  "message": "Mensagem pública sanitizada",
+                  "correlation_id": "synthetic-correlation"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error403": {
+        "description": "Acesso negado",
+        "headers": {
+          "X-Correlation-Id": {
+            "description": "Identificador de correlação da requisição.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$"
+            }
+          },
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "examples": {
+              "synthetic": {
+                "value": {
+                  "type": "https://errors.plataforma.senai.br/forbidden",
+                  "title": "Acesso negado",
+                  "status": 403,
+                  "detail": "Mensagem pública sanitizada",
+                  "code": "FORBIDDEN",
+                  "message": "Mensagem pública sanitizada",
+                  "correlation_id": "synthetic-correlation"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error503": {
+        "description": "Autorização indisponível",
+        "headers": {
+          "X-Correlation-Id": {
+            "description": "Identificador de correlação da requisição.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$"
+            }
+          },
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "examples": {
+              "synthetic": {
+                "value": {
+                  "type": "https://errors.plataforma.senai.br/authorization_unavailable",
+                  "title": "Autorização indisponível",
+                  "status": 503,
+                  "detail": "Mensagem pública sanitizada",
+                  "code": "AUTHORIZATION_UNAVAILABLE",
+                  "message": "Mensagem pública sanitizada",
+                  "correlation_id": "synthetic-correlation"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
