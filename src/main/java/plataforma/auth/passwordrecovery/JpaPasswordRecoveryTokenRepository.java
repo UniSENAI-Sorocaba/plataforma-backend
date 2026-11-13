@@ -3,53 +3,61 @@ package plataforma.auth.passwordrecovery;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Durable adapter expected by the AUTH-10-DB migration. */
+/**
+ * Durable adapter expected by the AUTH-10-DB migration. The Spring Data repository is resolved when a
+ * method runs, so contexts without a database can still start.
+ */
 class JpaPasswordRecoveryTokenRepository implements PasswordRecoveryTokenRepository {
 
-    private final PasswordRecoveryTokenJpaRepository repository;
+    private final ObjectProvider<PasswordRecoveryTokenJpaRepository> repositoryProvider;
 
-    JpaPasswordRecoveryTokenRepository(PasswordRecoveryTokenJpaRepository repository) {
-        this.repository = repository;
+    JpaPasswordRecoveryTokenRepository(ObjectProvider<PasswordRecoveryTokenJpaRepository> repositoryProvider) {
+        this.repositoryProvider = repositoryProvider;
+    }
+
+    private PasswordRecoveryTokenJpaRepository repository() {
+        return repositoryProvider.getObject();
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<PasswordRecoveryToken> findByTokenHash(String tokenHash) {
-        return repository.findByTokenHash(tokenHash).map(PasswordRecoveryTokenEntity::toDomain);
+        return repository().findByTokenHash(tokenHash).map(PasswordRecoveryTokenEntity::toDomain);
     }
 
     @Override
     @Transactional
     public void save(PasswordRecoveryToken token) {
-        repository.save(PasswordRecoveryTokenEntity.from(token));
+        repository().save(PasswordRecoveryTokenEntity.from(token));
     }
 
     @Override
     @Transactional
     public int revokeActiveByUserId(UUID userId, Instant revokedAt) {
-        return repository.revokeActiveByUserId(userId, revokedAt);
+        return repository().revokeActiveByUserId(userId, revokedAt);
     }
 
     @Override
     @Transactional(readOnly = true)
     public long countIssuedSince(UUID userId, Instant since) {
-        return repository.countByUserIdAndIssuedAtGreaterThanEqual(userId, since);
+        return repository().countByUserIdAndIssuedAtGreaterThanEqual(userId, since);
     }
 
     @Override
     @Transactional
     public Optional<PasswordRecoveryToken> consumeIfActive(String tokenHash, Instant consumedAt) {
-        if (repository.consumeIfActive(tokenHash, consumedAt) == 0) {
+        if (repository().consumeIfActive(tokenHash, consumedAt) == 0) {
             return Optional.empty();
         }
-        return repository.findByTokenHash(tokenHash).map(PasswordRecoveryTokenEntity::toDomain);
+        return repository().findByTokenHash(tokenHash).map(PasswordRecoveryTokenEntity::toDomain);
     }
 
     @Override
     @Transactional
     public boolean revokeIfActive(String tokenHash, Instant revokedAt) {
-        return repository.revokeIfActive(tokenHash, revokedAt) > 0;
+        return repository().revokeIfActive(tokenHash, revokedAt) > 0;
     }
 }
