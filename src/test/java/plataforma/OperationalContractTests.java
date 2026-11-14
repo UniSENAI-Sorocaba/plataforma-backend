@@ -55,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration",
         "platform.crud.api.enabled=true",
+        "platform.rubric.api.enabled=false",
         "platform.audit.api.enabled=true",
         "springdoc.api-docs.enabled=false"
 })

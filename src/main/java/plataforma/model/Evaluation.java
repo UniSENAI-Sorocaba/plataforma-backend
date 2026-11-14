@@ -8,15 +8,21 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.CascadeType;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 
 /** Notas de um avaliador da banca, por critério da rubrica (0 a 10). */
 @Entity
-@Table(schema = "academic_pi", name = "evaluation")
+@Table(schema = "academic_pi", name = "evaluation",
+        uniqueConstraints = @UniqueConstraint(name = "uk_evaluation_board_evaluator", columnNames = {"board_id", "evaluator_id"}))
 public class Evaluation {
 
     @Id
@@ -31,16 +37,23 @@ public class Evaluation {
     @JoinColumn(name = "evaluator_id", nullable = false)
     private UserAccount evaluator;
 
-    @Column(name = "technical_grade", nullable = false, precision = 4, scale = 2)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rubric_version_id")
+    private RubricVersion rubricVersion;
+
+    @OneToMany(mappedBy = "evaluation", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<EvaluationCriterionScore> criterionScores = new ArrayList<>();
+
+    @Column(name = "technical_grade", precision = 10, scale = 4)
     private BigDecimal technicalGrade;
 
-    @Column(name = "presentation_grade", nullable = false, precision = 4, scale = 2)
+    @Column(name = "presentation_grade", precision = 10, scale = 4)
     private BigDecimal presentationGrade;
 
-    @Column(name = "artifact_grade", nullable = false, precision = 4, scale = 2)
+    @Column(name = "artifact_grade", precision = 10, scale = 4)
     private BigDecimal artifactGrade;
 
-    /** TODO BE-015: calcular pela rubrica de forma determinística e auditável. */
+    /** Resultado calculado pela versão da rubrica informada no lançamento. */
     @Column(name = "final_grade", precision = 4, scale = 2)
     private BigDecimal finalGrade;
 
@@ -71,6 +84,26 @@ public class Evaluation {
         this.evaluator = evaluator;
     }
 
+    public RubricVersion getRubricVersion() {
+        return rubricVersion;
+    }
+
+    public void setRubricVersion(RubricVersion rubricVersion) {
+        this.rubricVersion = rubricVersion;
+    }
+
+    public List<EvaluationCriterionScore> getCriterionScores() {
+        return List.copyOf(criterionScores);
+    }
+
+    public void replaceCriterionScores(List<EvaluationCriterionScore> scores) {
+        criterionScores.clear();
+        scores.forEach(score -> {
+            criterionScores.add(score);
+            score.setEvaluation(this);
+        });
+    }
+
     public BigDecimal getTechnicalGrade() {
         return technicalGrade;
     }
@@ -97,6 +130,10 @@ public class Evaluation {
 
     public BigDecimal getFinalGrade() {
         return finalGrade;
+    }
+
+    public void setFinalGrade(BigDecimal finalGrade) {
+        this.finalGrade = finalGrade;
     }
 
     public String getFeedback() {

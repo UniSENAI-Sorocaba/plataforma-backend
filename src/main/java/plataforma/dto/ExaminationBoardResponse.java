@@ -3,6 +3,7 @@ package plataforma.dto;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.List;
 import plataforma.model.BoardStatus;
 
 public record ExaminationBoardResponse(
@@ -13,5 +14,6 @@ public record ExaminationBoardResponse(
         String location,
         BoardStatus status,
         BigDecimal finalGrade,
-        Instant createdAt) {
+        Instant createdAt,
+        List<UUID> evaluatorIds) {
 }

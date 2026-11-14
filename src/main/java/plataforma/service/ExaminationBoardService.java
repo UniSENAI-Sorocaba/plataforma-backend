@@ -1,6 +1,8 @@
 package plataforma.service;
 
 import java.util.UUID;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -8,11 +10,12 @@ import plataforma.dto.ExaminationBoardRequest;
 import plataforma.dto.ExaminationBoardResponse;
 import plataforma.dto.PageResponse;
 import plataforma.exception.ResourceNotFoundException;
+import plataforma.exception.RubricRuleViolationException;
 import plataforma.mapper.ExaminationBoardMapper;
 import plataforma.model.ExaminationBoard;
 import plataforma.repository.ExaminationBoardRepository;
 
-// TODO BE-011: impedir conflito de horário e vínculo inválido de avaliadores.
+// TODO BE-011: impedir conflito de horário.
 @Service
 @Transactional(readOnly = true)
 public class ExaminationBoardService {
@@ -20,12 +23,14 @@ public class ExaminationBoardService {
     private final ExaminationBoardRepository repository;
     private final ExaminationBoardMapper mapper;
     private final ProjectService projectService;
+    private final UserService userService;
 
     public ExaminationBoardService(ExaminationBoardRepository repository, ExaminationBoardMapper mapper,
-            ProjectService projectService) {
+            ProjectService projectService, UserService userService) {
         this.repository = repository;
         this.mapper = mapper;
         this.projectService = projectService;
+        this.userService = userService;
     }
 
     @Transactional
@@ -63,5 +68,23 @@ public class ExaminationBoardService {
     private void copyToEntity(ExaminationBoardRequest request, ExaminationBoard board) {
         mapper.copyToEntity(request, board);
         board.setProject(projectService.findEntity(request.projectId()));
+        if (request.evaluatorIds() != null) {
+            board.replaceEvaluators(resolveEvaluators(request.evaluatorIds()));
+        }
+    }
+
+    private Set<plataforma.model.UserAccount> resolveEvaluators(java.util.List<UUID> evaluatorIds) {
+        if (evaluatorIds.stream().distinct().count() != evaluatorIds.size()) {
+            throw new RubricRuleViolationException("A banca não pode repetir avaliadores");
+        }
+        var evaluators = new LinkedHashSet<plataforma.model.UserAccount>();
+        for (UUID evaluatorId : evaluatorIds) {
+            var evaluator = userService.findEntity(evaluatorId);
+            if (!evaluator.isActive() || evaluator.getRole() != plataforma.model.Role.PROFESSOR) {
+                throw new RubricRuleViolationException("Avaliador deve ser um professor ativo");
+            }
+            evaluators.add(evaluator);
+        }
+        return evaluators;
     }
 }

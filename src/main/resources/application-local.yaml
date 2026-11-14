@@ -19,6 +19,9 @@ platform:
   crud:
     api:
       enabled: true
+  rubric:
+    api:
+      enabled: true
   audit:
     api:
       enabled: true

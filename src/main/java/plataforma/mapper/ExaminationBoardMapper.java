@@ -17,7 +17,8 @@ public class ExaminationBoardMapper {
                 board.getLocation(),
                 board.getStatus(),
                 board.getFinalGrade(),
-                board.getCreatedAt());
+                board.getCreatedAt(),
+                board.getEvaluators().stream().map(user -> user.getId()).toList());
     }
 
     /** Copia os campos simples. O projeto é resolvido no service. */

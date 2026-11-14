@@ -46,8 +46,8 @@ gerado, que você usa no passo seguinte.
      "leaderId": "<id do aluno>", "advisorId": "<id do professor>" }
    ```
 3. `POST /api/v1/project-members`: vincule alunos ao projeto.
-4. `POST /api/v1/boards`: agende a banca do projeto (horários em ISO-8601, ex.: `2026-11-20T14:00:00-03:00`).
-5. `POST /api/v1/evaluations`: lance as notas (0 a 10) de um avaliador na banca.
+4. `POST /api/v1/boards`: agende a banca do projeto (horários em ISO-8601, ex.: `2026-11-20T14:00:00-03:00`) e informe `evaluatorIds` com professores ativos.
+5. Mude a banca para `IN_EVALUATION` e use `POST /api/v1/evaluations` com `rubricVersionId` e `criterionScores` para lançar notas versionadas.
 
 **Extensão**
 
@@ -112,7 +112,8 @@ Cada recurso tem os mesmos 7 arquivos, um em cada pasta. Use projetos como model
 | `Project` | `academic_pi.project` | líder e orientador → `UserAccount` |
 | `ProjectMember` | `academic_pi.project_member` | → `Project`, → `UserAccount` |
 | `ExaminationBoard` | `academic_pi.examination_board` | → `Project` (uma banca por projeto) |
-| `Evaluation` | `academic_pi.evaluation` | → `ExaminationBoard`, avaliador → `UserAccount` |
+| `Rubric` / `RubricVersion` / `RubricCriterion` | `academic_pi.rubric*` | versões imutáveis, critérios, pesos e limites |
+| `Evaluation` / `EvaluationCriterionScore` | `academic_pi.evaluation*` | → `ExaminationBoard`, avaliador → `UserAccount`, snapshot da rubrica |
 | `Notice` | `extension.notice` | orientador → `UserAccount` |
 | `Enrollment` | `extension.enrollment` | → `Notice`, aluno → `UserAccount` |
 | `Activity` | `extension.activity` | → `Enrollment`, revisor → `UserAccount` |
@@ -269,7 +270,7 @@ As regras abaixo estão marcadas no código com `TODO BE-0xx`, o ID da task no b
 | BE-007 | `ProjectService`, `ProjectStatus` | validar papéis, campos e transições de status |
 | BE-008 | `ProjectMemberService` | convites: aceitar/recusar sem duplicidade |
 | BE-011 | `ExaminationBoardService` | impedir conflito de horário e avaliador inválido |
-| BE-015 | `EvaluationService` | calcular `finalGrade` pela rubrica e consolidar a nota da banca |
+| BE-015 | `RubricService`, `EvaluationService` | rubricas versionadas, cálculo determinístico, consolidação e auditoria |
 | BE-009 | `EnrollmentService` | respeitar janela do edital e elegibilidade |
 | BE-014 | `ActivityService` | deferir/indeferir com motivo e total de horas |
 | BE-017 | `CertificateService` | gerar hash/QR verificável e validação pública |

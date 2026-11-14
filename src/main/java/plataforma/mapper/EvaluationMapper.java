@@ -1,6 +1,7 @@
 package plataforma.mapper;
 
 import org.springframework.stereotype.Component;
+import plataforma.dto.EvaluationCriterionScoreResponse;
 import plataforma.dto.EvaluationRequest;
 import plataforma.dto.EvaluationResponse;
 import plataforma.model.Evaluation;
@@ -18,7 +19,12 @@ public class EvaluationMapper {
                 evaluation.getArtifactGrade(),
                 evaluation.getFinalGrade(),
                 evaluation.getFeedback(),
-                evaluation.getCreatedAt());
+                evaluation.getCreatedAt(),
+                evaluation.getRubricVersion() == null ? null : evaluation.getRubricVersion().getId(),
+                evaluation.getCriterionScores().stream()
+                        .map(score -> new EvaluationCriterionScoreResponse(
+                                score.getCriterion().getCode(), score.getScore()))
+                        .toList());
     }
 
     /** Copia os campos simples. Banca e avaliador são resolvidos no service. */

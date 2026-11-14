@@ -1,6 +1,7 @@
 package plataforma.model;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -10,10 +11,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import org.hibernate.annotations.CreationTimestamp;
 
 /** Banca examinadora de um projeto (uma por projeto). */
@@ -30,6 +34,12 @@ public class ExaminationBoard {
     @JoinColumn(name = "project_id", nullable = false, unique = true)
     private Project project;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(schema = "academic_pi", name = "examination_board_evaluator",
+            joinColumns = @JoinColumn(name = "board_id"),
+            inverseJoinColumns = @JoinColumn(name = "evaluator_id"))
+    private Set<UserAccount> evaluators = new LinkedHashSet<>();
+
     @Column(name = "scheduled_at", nullable = false)
     private Instant scheduledAt;
 
@@ -44,7 +54,7 @@ public class ExaminationBoard {
     @Column(nullable = false)
     private BoardStatus status = BoardStatus.SCHEDULED;
 
-    /** Nota consolidada da banca. TODO BE-015: calcular a partir das avaliações. */
+    /** Nota consolidada da banca, preenchida quando todos os avaliadores enviam suas notas. */
     @Column(name = "final_grade", precision = 4, scale = 2)
     private BigDecimal finalGrade;
 
@@ -62,6 +72,19 @@ public class ExaminationBoard {
 
     public void setProject(Project project) {
         this.project = project;
+    }
+
+    public Set<UserAccount> getEvaluators() {
+        return Set.copyOf(evaluators);
+    }
+
+    public void replaceEvaluators(Set<UserAccount> evaluators) {
+        this.evaluators.clear();
+        this.evaluators.addAll(evaluators);
+    }
+
+    public boolean hasEvaluator(UserAccount evaluator) {
+        return evaluators.stream().anyMatch(candidate -> candidate.getId().equals(evaluator.getId()));
     }
 
     public Instant getScheduledAt() {
@@ -98,6 +121,10 @@ public class ExaminationBoard {
 
     public BigDecimal getFinalGrade() {
         return finalGrade;
+    }
+
+    public void setFinalGrade(BigDecimal finalGrade) {
+        this.finalGrade = finalGrade;
     }
 
     public Instant getCreatedAt() {
