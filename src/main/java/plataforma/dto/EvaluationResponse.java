@@ -3,6 +3,7 @@ package plataforma.dto;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.List;
 
 public record EvaluationResponse(
         UUID id,
@@ -13,5 +14,7 @@ public record EvaluationResponse(
         BigDecimal artifactGrade,
         BigDecimal finalGrade,
         String feedback,
-        Instant createdAt) {
+        Instant createdAt,
+        UUID rubricVersionId,
+        List<EvaluationCriterionScoreResponse> criterionScores) {
 }

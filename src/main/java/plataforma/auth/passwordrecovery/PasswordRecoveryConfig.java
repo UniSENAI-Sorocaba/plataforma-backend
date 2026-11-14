@@ -24,12 +24,14 @@ public class PasswordRecoveryConfig {
 
     @Bean
     @Profile("!test")
+    @ConditionalOnBean(PasswordRecoveryTokenJpaRepository.class)
     PasswordRecoveryTokenRepository passwordRecoveryTokenRepository(
             PasswordRecoveryTokenJpaRepository repository) {
         return new JpaPasswordRecoveryTokenRepository(repository);
     }
 
     @Bean
+    @ConditionalOnBean(PasswordRecoveryTokenRepository.class)
     PasswordRecoveryTokenService passwordRecoveryTokenService(
             PasswordRecoveryTokenRepository repo,
             Clock clock,
