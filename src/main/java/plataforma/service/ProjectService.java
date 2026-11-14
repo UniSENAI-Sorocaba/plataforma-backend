@@ -14,8 +14,9 @@ import plataforma.model.Project;
 import plataforma.model.ProjectStatus;
 import plataforma.model.Role;
 import plataforma.repository.ProjectRepository;
+import org.springframework.security.access.AccessDeniedException;
 
-// 1. colocar 403.
+// 1. colocar 403. (funciona?)
 // 2. mexer com testes
 // 3. transição de status?
 // 4. catalogo publico apenas approved
@@ -41,10 +42,10 @@ public class ProjectService {
     @Transactional
     public ProjectResponse create(ProjectRequest request) {
         var project = new Project();
-        var userRole = Role.PROFESSOR; //não tem header ainda para se pegar o role do usuário.
+        var userRole = Role.STUDENT; //não tem header ainda para se pegar o role do usuário.
         if (userRole != Role.PROFESSOR) {
             //lugar de erro 403
-            throw new ConflictException("erro de não professor, tentando criar projeto");
+            throw new AccessDeniedException("Erro de não professor, tentando criar projeto");
         }
         var advisor = userService.findEntity(request.advisorId());
         if (advisor.getRole() != Role.PROFESSOR) {
@@ -77,7 +78,7 @@ public class ProjectService {
         var userRole = Role.PROFESSOR; //não tem header ainda para se pegar o role do usuário.
         if (userRole != Role.PROFESSOR) {
             //lugar de erro 403
-            throw new ConflictException("erro de não professor, tentando alterar projeto");
+            throw new AccessDeniedException("Erro de não professor, tentando alterar projeto");
         }
         if (request.projectType() != project.getProjectType()) {
             throw new ConflictException("erro de tentar alterar tipo do projeto");
