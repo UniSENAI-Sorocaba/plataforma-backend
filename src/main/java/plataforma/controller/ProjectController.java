@@ -8,7 +8,6 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -57,12 +56,5 @@ public class ProjectController {
     @Operation(summary = "Atualiza um projeto")
     public ProjectResponse update(@PathVariable UUID id, @Valid @RequestBody ProjectRequest request) {
         return service.update(id, request);
-    }
-
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Exclui um projeto")
-    public void delete(@PathVariable UUID id) {
-        service.delete(id);
     }
 }
