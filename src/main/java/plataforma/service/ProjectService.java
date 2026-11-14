@@ -15,7 +15,14 @@ import plataforma.model.ProjectStatus;
 import plataforma.model.Role;
 import plataforma.repository.ProjectRepository;
 
-// a função de tacar exception 403 não está funcionando, então está um print no lugar, até que o erro 403 funcione.
+// 1. colocar 403.
+// 2. mexer com testes
+// 3. transição de status?
+// 4. catalogo publico apenas approved
+// 5. não tem nenhuma spec do meu card sobre isso e os erro são passados, porem não são lidos
+// segundo PO, o campo continuo/data de encerramento não esta definido direito;
+// segundo PO, somente 1 advisor por projeto;
+// segundo PO, docente pode alterar qualquer projeto;
 // partes que envolvem autenticação e autorização estão hardcoded, pois não tem autenticação ainda.
 @Service
 @Transactional(readOnly = true)
@@ -34,13 +41,13 @@ public class ProjectService {
     @Transactional
     public ProjectResponse create(ProjectRequest request) {
         var project = new Project();
-        var RoleDoUsuario = Role.STUDENT; //não tem header ainda para se pegar o role do usuário.
-        if (RoleDoUsuario != Role.PROFESSOR) {
+        var userRole = Role.PROFESSOR; //não tem header ainda para se pegar o role do usuário.
+        if (userRole != Role.PROFESSOR) {
             //lugar de erro 403
             throw new ConflictException("erro de não professor, tentando criar projeto");
         }
-        var mano = userService.findEntity(request.advisorId());
-        if (mano.getRole() != Role.PROFESSOR) {
+        var advisor = userService.findEntity(request.advisorId());
+        if (advisor.getRole() != Role.PROFESSOR) {
             throw new ConflictException("erro de colocar advisor que não é professor");
         }
         copyToEntity(request, project);
@@ -67,22 +74,16 @@ public class ProjectService {
     @Transactional
     public ProjectResponse update(UUID id, ProjectRequest request) {
         var project = findEntity(id);
-        var RoleDoUsuario = Role.STUDENT; //não tem header ainda para se pegar o role do usuário.
-        if (RoleDoUsuario != Role.PROFESSOR) {
+        var userRole = Role.PROFESSOR; //não tem header ainda para se pegar o role do usuário.
+        if (userRole != Role.PROFESSOR) {
             //lugar de erro 403
             throw new ConflictException("erro de não professor, tentando alterar projeto");
         }
         if (request.projectType() != project.getProjectType()) {
             throw new ConflictException("erro de tentar alterar tipo do projeto");
         }
-        //não se sabe sobre o campo continuo/data_final, então o campo course esta sendo usado.
-        /*
-        if (!request.course().equals(project.getCourse())) { 
-            throw new ConflictException("erro de tentar alterar continuo/data_final do projeto");
-        }
-        */
-        var mano = userService.findEntity(request.advisorId());
-        if (mano.getRole() != Role.PROFESSOR) {
+        var advisor = userService.findEntity(request.advisorId());
+        if (advisor.getRole() != Role.PROFESSOR) {
             throw new ConflictException("erro de colocar advisor que não é professor");
         }
         copyToEntity(request, project);
