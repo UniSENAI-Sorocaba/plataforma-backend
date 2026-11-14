@@ -50,6 +50,20 @@ class AuditEventServiceTest {
     }
 
     @Test
+    void recordRedigeSegredosDeDadosAninhadosAntesDePersistir() {
+        String credential = UUID.randomUUID().toString();
+        when(repository.save(any(AuditEvent.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.record(new RecordAuditEventRequest(
+                "auth", "user_account", AuditOperation.INSERT, UUID.randomUUID(), null,
+                null, Map.of("profile", Map.of("email", "aluno@exemplo.test", "password", credential))));
+
+        String responseData = response.newData().toString();
+        assertThat(responseData.contains("[REDACTED]")).isTrue();
+        assertThat(responseData.contains(credential)).isFalse();
+    }
+
+    @Test
     void findByIdLancaNotFoundQuandoNaoExiste() {
         var id = UUID.randomUUID();
         when(repository.findById(id)).thenReturn(Optional.empty());
