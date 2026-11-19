@@ -10,6 +10,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import plataforma.PlataformaDigitalApplication;
+import br.senai.plataformadigital.auth.web.AuthorizationRoutes;
 import plataforma.service.ActivityService;
 import plataforma.service.AuditEventService;
 import plataforma.service.CertificateService;
@@ -20,6 +21,8 @@ import plataforma.service.NoticeService;
 import plataforma.service.ProjectMemberService;
 import plataforma.service.ProjectService;
 import plataforma.service.UserService;
+import plataforma.repository.UserAccountRepository;
+import plataforma.auth.passwordrecovery.PasswordRecoveryTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -41,6 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = PlataformaDigitalApplication.class,
         properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration")
 @MockitoBean(types = {ActivityService.class,
+        UserAccountRepository.class,
         AuditEventService.class,
         CertificateService.class,
         EnrollmentService.class,
@@ -54,6 +58,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("impact-local")
 @Import(ImpactHttpTests.PermissionFixtures.class)
 class ImpactHttpTests {
+    @MockitoBean(name = "passwordRecoveryTokenRepository")
+    PasswordRecoveryTokenRepository passwordRecoveryTokenRepository;
     private static final String ROOT = "/api/v1/impacts";
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
@@ -62,7 +68,10 @@ class ImpactHttpTests {
     @TestConfiguration(proxyBeanMethods = false)
     static class PermissionFixtures {
         @Bean
-        ImpactPermissionProvider fixturePermissions() {
+        ImpactPermissionProvider fixturePermissions(AuthorizationRoutes routes) {
+            if (routes.find("GET", "/api/v1/impacts/{id}/history") == null) {
+                throw new IllegalStateException("Catálogo de teste não carregou GET /api/v1/impacts/{id}/history");
+            }
             return (actor, action, id) -> actor.equals("synthetic-editor") || actor.equals("synthetic-approver")
                     || (actor.equals("synthetic-reader") && action == Impact.Action.READ)
                     || (id != null && actor.equals("synthetic-scoped:" + id) && action == Impact.Action.READ);

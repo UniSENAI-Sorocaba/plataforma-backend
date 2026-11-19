@@ -36,7 +36,8 @@ jobs:
           name: authorization-evidence
           path: |
             target/surefire-reports/
-            target/site/jacoco/
+            target/site/jacoco-backend/
+            target/site/jacoco-critical/
             target/authorization/
             docs/compliance/BE-010.md
           if-no-files-found: warn
