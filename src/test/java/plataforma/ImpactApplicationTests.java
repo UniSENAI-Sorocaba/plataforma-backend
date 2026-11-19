@@ -12,6 +12,8 @@ import plataforma.service.NoticeService;
 import plataforma.service.ProjectMemberService;
 import plataforma.service.ProjectService;
 import plataforma.service.UserService;
+import plataforma.repository.UserAccountRepository;
+import plataforma.auth.passwordrecovery.PasswordRecoveryTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -27,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @SpringBootTest(classes = PlataformaDigitalApplication.class,
         properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration")
 @MockitoBean(types = {ActivityService.class,
+        UserAccountRepository.class,
         AuditEventService.class,
         CertificateService.class,
         EnrollmentService.class,
@@ -38,6 +41,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
         UserService.class})
 @AutoConfigureMockMvc
 class ImpactApplicationTests {
+    @MockitoBean(name = "passwordRecoveryTokenRepository")
+    private PasswordRecoveryTokenRepository passwordRecoveryTokenRepository;
     @Autowired
     private MockMvc mvc;
 

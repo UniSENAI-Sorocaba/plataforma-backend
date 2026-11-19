@@ -20,6 +20,21 @@
     <!-- 1.21.4+ é compatível com Docker Engine 29 (API mínima 1.40). -->
     <testcontainers.version>1.21.4</testcontainers.version>
     <bouncycastle.version>1.86</bouncycastle.version>
+    <!-- Limites BE-020 alinhados à POL-QA-001; valores mantidos neste único bloco. -->
+    <be020.coverage.global.line.minimum>0.80</be020.coverage.global.line.minimum>
+    <be020.coverage.global.branch.minimum>0.70</be020.coverage.global.branch.minimum>
+    <be020.coverage.critical.line.minimum>0.90</be020.coverage.critical.line.minimum>
+    <be020.coverage.critical.branch.minimum>0.80</be020.coverage.critical.branch.minimum>
+    <be020.coverage.haltOnFailure>true</be020.coverage.haltOnFailure>
+    <!-- Seletores críticos BE-020; cada classe pertence a um único seletor. -->
+    <be020.coverage.critical.auth.include>plataforma/auth/**</be020.coverage.critical.auth.include>
+    <be020.coverage.critical.authorization.api.include>br/senai/plataformadigital/auth/api/authorization/**</be020.coverage.critical.authorization.api.include>
+    <be020.coverage.critical.authorization.web.include>br/senai/plataformadigital/auth/web/**</be020.coverage.critical.authorization.web.include>
+    <be020.coverage.critical.security.include>plataforma/security/**</be020.coverage.critical.security.include>
+    <be020.coverage.critical.core.service.include>plataforma/service/**</be020.coverage.critical.core.service.include>
+    <be020.coverage.critical.core.model.include>plataforma/model/**</be020.coverage.critical.core.model.include>
+    <be020.coverage.critical.core.impact.include>br/senai/plataformadigital/portal/impact/**</be020.coverage.critical.core.impact.include>
+    <be020.coverage.critical.core.impact.config.include>plataforma/config/ImpactConfiguration*</be020.coverage.critical.core.impact.config.include>
   </properties>
   <dependencies>
     <dependency>
@@ -114,23 +129,77 @@
             <goals><goal>prepare-agent</goal></goals>
           </execution>
           <execution>
-            <id>authorization-coverage</id>
+            <id>backend-global-report</id>
             <phase>verify</phase>
-            <goals><goal>report</goal><goal>check</goal></goals>
+            <goals><goal>report</goal></goals>
             <configuration>
+              <outputDirectory>${project.reporting.outputDirectory}/jacoco-backend</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>critical-domain-report</id>
+            <phase>verify</phase>
+            <goals><goal>report</goal></goals>
+            <configuration>
+              <outputDirectory>${project.reporting.outputDirectory}/jacoco-critical</outputDirectory>
               <includes>
-                <include>br/senai/plataformadigital/auth/api/authorization/**</include>
-                <include>br/senai/plataformadigital/auth/web/**</include>
+                <include>${be020.coverage.critical.auth.include}</include>
+                <include>${be020.coverage.critical.authorization.api.include}</include>
+                <include>${be020.coverage.critical.authorization.web.include}</include>
+                <include>${be020.coverage.critical.security.include}</include>
+                <include>${be020.coverage.critical.core.service.include}</include>
+                <include>${be020.coverage.critical.core.model.include}</include>
+                <include>${be020.coverage.critical.core.impact.include}</include>
+                <include>${be020.coverage.critical.core.impact.config.include}</include>
               </includes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>critical-domain-coverage</id>
+            <phase>verify</phase>
+            <goals><goal>check</goal></goals>
+            <configuration>
+              <haltOnFailure>${be020.coverage.haltOnFailure}</haltOnFailure>
+              <includes>
+                <include>${be020.coverage.critical.auth.include}</include>
+                <include>${be020.coverage.critical.authorization.api.include}</include>
+                <include>${be020.coverage.critical.authorization.web.include}</include>
+                <include>${be020.coverage.critical.security.include}</include>
+                <include>${be020.coverage.critical.core.service.include}</include>
+                <include>${be020.coverage.critical.core.model.include}</include>
+                <include>${be020.coverage.critical.core.impact.include}</include>
+                <include>${be020.coverage.critical.core.impact.config.include}</include>
+              </includes>
+              <rules>
+                <rule>
+                  <element>PACKAGE</element>
+                  <limits>
+                    <limit>
+                      <counter>LINE</counter><value>COVEREDRATIO</value><minimum>${be020.coverage.critical.line.minimum}</minimum>
+                    </limit>
+                    <limit>
+                      <counter>BRANCH</counter><value>COVEREDRATIO</value><minimum>${be020.coverage.critical.branch.minimum}</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+          <execution>
+            <id>backend-global-coverage</id>
+            <phase>verify</phase>
+            <goals><goal>check</goal></goals>
+            <configuration>
+              <haltOnFailure>${be020.coverage.haltOnFailure}</haltOnFailure>
               <rules>
                 <rule>
                   <element>BUNDLE</element>
                   <limits>
                     <limit>
-                      <counter>LINE</counter><value>COVEREDRATIO</value><minimum>0.90</minimum>
+                      <counter>LINE</counter><value>COVEREDRATIO</value><minimum>${be020.coverage.global.line.minimum}</minimum>
                     </limit>
                     <limit>
-                      <counter>BRANCH</counter><value>COVEREDRATIO</value><minimum>0.80</minimum>
+                      <counter>BRANCH</counter><value>COVEREDRATIO</value><minimum>${be020.coverage.global.branch.minimum}</minimum>
                     </limit>
                   </limits>
                 </rule>
@@ -145,47 +214,4 @@
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <id>impact-coverage</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <build>
-        <plugins>
-            <plugin>
-              <groupId>org.jacoco</groupId>
-              <artifactId>jacoco-maven-plugin</artifactId>
-              <version>0.8.16</version>
-              <executions>
-                <execution>
-                  <goals><goal>prepare-agent</goal></goals>
-                </execution>
-                <execution>
-                  <id>impact-coverage</id>
-                  <phase>verify</phase>
-                  <goals><goal>report</goal><goal>check</goal></goals>
-                  <configuration>
-                    <outputDirectory>${project.reporting.outputDirectory}/jacoco-impact</outputDirectory>
-                    <includes>
-                      <include>br/senai/plataformadigital/portal/impact/**</include>
-                      <include>plataforma/config/ImpactConfiguration*</include>
-                    </includes>
-                    <rules>
-                      <rule>
-                        <element>BUNDLE</element>
-                        <limits>
-                          <limit><counter>LINE</counter><value>COVEREDRATIO</value><minimum>0.90</minimum></limit>
-                          <limit><counter>BRANCH</counter><value>COVEREDRATIO</value><minimum>0.80</minimum></limit>
-                        </limits>
-                      </rule>
-                    </rules>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

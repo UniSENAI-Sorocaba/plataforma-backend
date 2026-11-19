@@ -17,6 +17,27 @@ import org.springframework.core.env.StandardEnvironment;
 class StructuredSecretMaskingTest {
 
     @Test
+    void converterReturnsPlainMessageWithoutThrowableAndRendersSuppressedAndCausedErrors() {
+        var converter = new SecretMaskingConverter();
+        var noThrowable = new LoggingEvent();
+        noThrowable.setMessage("status=healthy");
+        assertThat(converter.convert(noThrowable)).isEqualTo("status=healthy");
+
+        var root = new IllegalStateException("root-secret");
+        root.addSuppressed(new IllegalArgumentException("suppressed-secret"));
+        var wrapper = new RuntimeException("wrapper-secret", root);
+        var event = new LoggingEvent();
+        event.setMessage("request password=secret");
+        event.setThrowableProxy(new ThrowableProxy(wrapper));
+
+        String rendered = converter.convert(event);
+        assertThat(rendered).contains("Suppressed: java.lang.IllegalArgumentException")
+                .contains("Caused by: java.lang.IllegalStateException")
+                .contains("[exception message omitted]")
+                .doesNotContain("root-secret", "suppressed-secret", "wrapper-secret", "password=secret");
+    }
+
+    @Test
     void logstashLineKeepsCorrelationIdAndMasksSecrets() {
         String secret = "sample-secret-value";
         var environment = new StandardEnvironment();

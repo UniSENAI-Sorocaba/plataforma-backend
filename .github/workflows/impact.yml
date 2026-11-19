@@ -35,7 +35,8 @@ jobs:
           name: impact-evidence
           path: |
             target/surefire-reports/
-            target/site/jacoco-impact/
+            target/site/jacoco-backend/
+            target/site/jacoco-critical/
             src/test/resources/impact/
             contracts/impact.openapi.json
             docs/compliance/BE-019.md

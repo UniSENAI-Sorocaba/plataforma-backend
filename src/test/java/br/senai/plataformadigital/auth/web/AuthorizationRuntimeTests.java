@@ -26,6 +26,8 @@ import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.RouterFunctions;
 import org.springframework.web.servlet.function.ServerResponse;
 import plataforma.PlataformaDigitalApplication;
+import plataforma.repository.UserAccountRepository;
+import plataforma.auth.passwordrecovery.PasswordRecoveryTokenRepository;
 import plataforma.service.ActivityService;
 import plataforma.service.AuditEventService;
 import plataforma.service.CertificateService;
@@ -48,6 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "platform.audit.api.enabled=true"
 })
 @MockitoBean(types = {ActivityService.class,
+        UserAccountRepository.class,
         AuditEventService.class,
         CertificateService.class,
         EnrollmentService.class,
@@ -60,6 +63,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Import({AuthorizationRuntimeTests.FixtureController.class, AuthorizationRuntimeTests.Fixtures.class})
 class AuthorizationRuntimeTests {
+    @MockitoBean(name = "passwordRecoveryTokenRepository")
+    PasswordRecoveryTokenRepository passwordRecoveryTokenRepository;
     @Autowired MockMvc mvc;
     @Autowired TestRestTemplate client;
     @Autowired AtomicBoolean sourceAvailable;
