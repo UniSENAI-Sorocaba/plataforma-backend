@@ -1,0 +1,86 @@
+openapi: 3.1.0
+info:
+  title: Plataforma Digital API
+  version: 0.1.0
+  description: Contrato mínimo da fundação da Plataforma Digital.
+servers:
+  - url: /
+paths:
+  /actuator/health:
+    get:
+      operationId: getHealth
+      summary: Verifica a saúde da aplicação
+      responses:
+        '200':
+          description: Aplicação disponível
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    enum: [UP, DOWN, OUT_OF_SERVICE, UNKNOWN]
+  /api/v1/foundation/errors:
+    get:
+      operationId: getFoundationErrorExamples
+      summary: Endpoint de referência para contratos de erro
+      responses:
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+components:
+  parameters:
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      schema:
+        type: string
+        maxLength: 128
+  schemas:
+    ApiError:
+      type: object
+      required: [timestamp, status, code, message, path, correlationId, details]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        correlationId:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+  responses:
+    ValidationError:
+      description: Dados de entrada inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    NotFoundError:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ConflictError:
+      description: Conflito de estado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'

@@ -28,6 +28,16 @@ public class ApiExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "A requisição contém dados inválidos.", request, details);
     }
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException exception, WebRequest request) {
+        return error(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", exception.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    ResponseEntity<ApiError> handleConflict(ConflictException exception, WebRequest request) {
+        return error(HttpStatus.CONFLICT, "CONFLICT", exception.getMessage(), request, List.of());
+    }
+
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> handleUnexpected(Exception exception, WebRequest request) {
         return error(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Não foi possível processar a requisição.", request,

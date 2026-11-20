@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class ApiFoundationWebTest {
@@ -34,5 +35,37 @@ class ApiFoundationWebTest {
                 new HttpEntity<>(headers), String.class);
 
         assertThat(response.getHeaders().getFirst("X-Correlation-Id")).isEqualTo("test-correlation-id");
+    }
+
+    @Test
+    void validationErrorUsesThePublicEnvelope() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<String> response = client.postForEntity("/api/v1/foundation/errors/validation",
+                new HttpEntity<>("{\"name\":\"\"}", headers), String.class);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).contains("VALIDATION_ERROR", "correlationId", "details");
+    }
+
+    @Test
+    void notFoundErrorUsesThePublicEnvelope() {
+        ResponseEntity<String> response = client.getForEntity("/api/v1/foundation/errors/not-found", String.class);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(404);
+        assertThat(response.getBody()).contains("RESOURCE_NOT_FOUND", "correlationId");
+    }
+
+    @Test
+    void conflictErrorUsesThePublicEnvelope() {
+        ResponseEntity<String> response = client.getForEntity("/api/v1/foundation/errors/conflict", String.class);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
+        assertThat(response.getBody()).contains("CONFLICT", "correlationId");
+    }
+
+    @Test
+    void openApiContractIsVersioned() {
+        assertThat(getClass().getResourceAsStream("/openapi/openapi.yaml")).isNotNull();
     }
 }
