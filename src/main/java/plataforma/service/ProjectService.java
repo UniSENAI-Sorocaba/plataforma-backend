@@ -16,15 +16,6 @@ import plataforma.model.Role;
 import plataforma.repository.ProjectRepository;
 import org.springframework.security.access.AccessDeniedException;
 
-// 1. colocar 403. (funciona?)
-// 2. mexer com testes
-// 3. transição de status?
-// 4. catalogo publico apenas approved
-// 5. não tem nenhuma spec do meu card sobre isso e os erro são passados, porem não são lidos
-// segundo PO, o campo continuo/data de encerramento não esta definido direito;
-// segundo PO, somente 1 advisor por projeto;
-// segundo PO, docente pode alterar qualquer projeto;
-// partes que envolvem autenticação e autorização estão hardcoded, pois não tem autenticação ainda.
 @Service
 @Transactional(readOnly = true)
 public class ProjectService {

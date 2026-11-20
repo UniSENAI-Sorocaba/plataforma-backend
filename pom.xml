@@ -102,10 +102,6 @@
       <version>1.5.9</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.dataformat</groupId>
-      <artifactId>jackson-dataformat-yaml</artifactId>
-    </dependency>
   </dependencies>
   <build>
     <plugins>
