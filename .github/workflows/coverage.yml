@@ -1,0 +1,33 @@
+name: Backend coverage gate
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main", "f1/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  coverage-gate:
+    name: coverage-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Run tests and coverage gate
+        run: mvn --batch-mode verify
+      - name: Publish coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-report
+          path: target/site/jacoco/
+          if-no-files-found: warn
