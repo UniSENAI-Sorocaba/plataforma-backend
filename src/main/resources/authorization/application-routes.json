@@ -178,5 +178,78 @@
     "method": "GET",
     "path": "/api/v1/deliverables/{id}/download",
     "publicAccess": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/extension/opportunities",
+    "publicAccess": false,
+    "action": "CREATE_EXTENSION_OPPORTUNITY",
+    "resource": "opportunity",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/opportunities",
+    "publicAccess": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/opportunities/{id}",
+    "publicAccess": true
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/extension/opportunities/{id}/publish",
+    "publicAccess": false,
+    "action": "PUBLISH_EXTENSION_OPPORTUNITY",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/extension/opportunities/{id}/close",
+    "publicAccess": false,
+    "action": "CLOSE_EXTENSION_OPPORTUNITY",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/extension/opportunities/{id}/applications",
+    "publicAccess": false,
+    "action": "APPLY_EXTENSION_OPPORTUNITY",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/opportunities/{id}/applications",
+    "publicAccess": false,
+    "action": "LIST_EXTENSION_APPLICATIONS",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/applications/mine",
+    "publicAccess": false,
+    "action": "LIST_OWN_EXTENSION_APPLICATIONS",
+    "resource": "application",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/extension/applications/{id}/withdraw",
+    "publicAccess": false,
+    "action": "WITHDRAW_EXTENSION_APPLICATION",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
   }
 ]

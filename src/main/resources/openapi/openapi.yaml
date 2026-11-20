@@ -361,6 +361,118 @@ paths:
           content:
             application/octet-stream: {}
         '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/extension/opportunities:
+    get:
+      operationId: listExtensionOpportunities
+      summary: Lista editais públicos de Extensão
+      responses:
+        '200':
+          description: Editais publicados ou encerrados
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/ExtensionOpportunity' } }
+    post:
+      operationId: createExtensionOpportunity
+      summary: Cria edital de Extensão em rascunho
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExtensionOpportunityRequest' }
+      responses:
+        '201':
+          description: Edital criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExtensionOpportunity' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/extension/opportunities/{id}:
+    get:
+      operationId: getExtensionOpportunity
+      summary: Consulta edital publicado ou encerrado
+      parameters: [{ $ref: '#/components/parameters/ProjectId' }]
+      responses:
+        '200':
+          description: Edital
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExtensionOpportunity' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+  /api/v1/extension/opportunities/{id}/publish:
+    patch:
+      operationId: publishExtensionOpportunity
+      summary: Publica edital
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/ProjectId' }]
+      responses:
+        '200':
+          description: Edital publicado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExtensionOpportunity' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/extension/opportunities/{id}/close:
+    patch:
+      operationId: closeExtensionOpportunity
+      summary: Encerra edital
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/ProjectId' }]
+      responses:
+        '200':
+          description: Edital encerrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExtensionOpportunity' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/extension/opportunities/{id}/applications:
+    post:
+      operationId: applyToExtensionOpportunity
+      summary: Registra inscrição do aluno na janela aberta
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/ProjectId' }]
+      responses:
+        '201':
+          description: Inscrição registrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExtensionApplication' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+    get:
+      operationId: listExtensionOpportunityApplications
+      summary: Lista inscrições de edital para coordenação ou responsável
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/ProjectId' }]
+      responses:
+        '200':
+          description: Inscrições
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/ExtensionApplication' } }
+  /api/v1/extension/applications/mine:
+    get:
+      operationId: listOwnExtensionApplications
+      summary: Lista inscrições do aluno autenticado
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Inscrições próprias
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/ExtensionApplication' } }
+  /api/v1/extension/applications/{id}/withdraw:
+    post:
+      operationId: withdrawExtensionApplication
+      summary: Desiste de inscrição durante a janela
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      responses:
+        '200':
+          description: Inscrição retirada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExtensionApplication' }
+        '409': { $ref: '#/components/responses/ConflictError' }
 components:
   securitySchemes:
     bearerAuth:
@@ -485,6 +597,35 @@ components:
         uploadExpiresAt: { type: string, format: date-time }
         uploadUrl: { type: string, nullable: true }
         downloadUrl: { type: string, nullable: true }
+    ExtensionOpportunityRequest:
+      type: object
+      required: [title, description, startsAt, endsAt]
+      properties:
+        projectId: { type: string, format: uuid, nullable: true }
+        title: { type: string, minLength: 5, maxLength: 200 }
+        description: { type: string, minLength: 20, maxLength: 5000 }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+    ExtensionOpportunity:
+      allOf:
+        - $ref: '#/components/schemas/ExtensionOpportunityRequest'
+        - type: object
+          required: [id, status, createdAt, updatedAt]
+          properties:
+            id: { type: string, format: uuid }
+            status: { type: string, enum: [DRAFT, PUBLISHED, CLOSED] }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+    ExtensionApplication:
+      type: object
+      required: [id, opportunityId, studentId, status, submittedAt]
+      properties:
+        id: { type: string, format: uuid }
+        opportunityId: { type: string, format: uuid }
+        studentId: { type: string, format: uuid }
+        status: { type: string, enum: [SUBMITTED, WITHDRAWN] }
+        submittedAt: { type: string, format: date-time }
+        withdrawnAt: { type: string, format: date-time, nullable: true }
     ApiError:
       type: object
       required: [timestamp, status, code, message, path, correlationId, details]

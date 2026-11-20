@@ -99,6 +99,8 @@
                 <exclude>br/senai/plataformadigital/academicpi/DeliverableController*</exclude>
                 <exclude>br/senai/plataformadigital/academicpi/DeliverableRepository*</exclude>
                 <exclude>br/senai/plataformadigital/academicpi/DeliverableStorage*</exclude>
+                <exclude>br/senai/plataformadigital/extension/ExtensionController*</exclude>
+                <exclude>br/senai/plataformadigital/extension/ExtensionRepository*</exclude>
               </excludes>
               <rules>
                 <rule>
