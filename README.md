@@ -38,6 +38,8 @@ security:
 
 O endpoint `POST /api/v1/auth/login` recebe `{ "email": "...", "password": "..." }` e retorna um access token Bearer RS256 com validade de 15 minutos. A persistência real de usuários será conectada ao repositório de identidade da Fase 2; até essa integração, a implementação usa o contrato `UserAccountRepository`.
 
+Quando `security.jwt.enabled=true` e um `DataSource` PostgreSQL estiver configurado, o adapter JDBC usa as tabelas DB-005 para persistir sessões e refresh tokens. O prazo padrão do refresh token é de 30 dias e pode ser alterado por `security.session.refresh-lifetime`. O modo sem datasource não ativa esse adapter.
+
 ## Governança
 
 Consulte `.governance-baseline` antes de qualquer mudança. A tag declarada ainda precisa ser publicada no repositório de governança e resolver para o SHA registrado; até lá, o gate remoto de spec-compliance permanece uma pendência organizacional.
