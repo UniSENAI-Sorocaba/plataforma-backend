@@ -9,5 +9,5 @@ import org.springframework.data.domain.Pageable;
 
 public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
-  Page<Project> findBystatusNot(ProjectStatus status, Pageable pageable);
+  Page<Project> findByStatus(ProjectStatus status, Pageable pageable);
 }

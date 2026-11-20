@@ -42,9 +42,9 @@
   {"method": "GET", "path": "/api/v1/project-members/{id}", "publicAccess": false, "action": "project-members:read", "resourceVariable": "id"},
   {"method": "PUT", "path": "/api/v1/project-members/{id}", "publicAccess": false, "action": "project-members:update", "resourceVariable": "id"},
   {"method": "DELETE", "path": "/api/v1/project-members/{id}", "publicAccess": false, "action": "project-members:delete", "resourceVariable": "id"},
-  {"method": "POST", "path": "/api/v1/users", "publicAccess": false, "action": "users:create", "resource": "users"},
-  {"method": "GET", "path": "/api/v1/users", "publicAccess": false, "action": "users:list", "resource": "users"},
-  {"method": "GET", "path": "/api/v1/users/{id}", "publicAccess": false, "action": "users:read", "resourceVariable": "id"},
-  {"method": "PUT", "path": "/api/v1/users/{id}", "publicAccess": false, "action": "users:update", "resourceVariable": "id"},
-  {"method": "DELETE", "path": "/api/v1/users/{id}", "publicAccess": false, "action": "users:delete", "resourceVariable": "id"}
+  {"method": "POST", "path": "/api/v1/users", "publicAccess": true},
+  {"method": "GET", "path": "/api/v1/users", "publicAccess": true},
+  {"method": "GET", "path": "/api/v1/users/{id}", "publicAccess": true},
+  {"method": "PUT", "path": "/api/v1/users/{id}", "publicAccess": true},
+  {"method": "DELETE", "path": "/api/v1/users/{id}", "publicAccess": true}
 ]

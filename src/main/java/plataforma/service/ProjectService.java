@@ -42,9 +42,8 @@ public class ProjectService {
     @Transactional
     public ProjectResponse create(ProjectRequest request) {
         var project = new Project();
-        var userRole = Role.STUDENT; //não tem header ainda para se pegar o role do usuário.
+        var userRole = Role.PROFESSOR; //não tem header ainda para se pegar o role do usuário.
         if (userRole != Role.PROFESSOR) {
-            //lugar de erro 403
             throw new AccessDeniedException("Erro de não professor, tentando criar projeto");
         }
         var advisor = userService.findEntity(request.advisorId());
@@ -58,15 +57,15 @@ public class ProjectService {
     public PageResponse<ProjectResponse> findAll(Pageable pageable) {
         var naoAutenticado = false; //era para checar que se o usuário está autenticado, mas não tem autenticação ainda.
         if (naoAutenticado) {
-            return PageResponse.from(repository.findBystatusNot(ProjectStatus.PROPOSED ,pageable), mapper::toResponse);
+            return PageResponse.from(repository.findByStatus(ProjectStatus.APPROVED ,pageable), mapper::toResponse);
         }
         return PageResponse.from(repository.findAll(pageable), mapper::toResponse);
     }
 
     public ProjectResponse findById(UUID id) {
-        var naoAutenticado = true; //era para checar que se o usuário está autenticado, mas não tem autenticação ainda.
+        var naoAutenticado = false; //era para checar que se o usuário está autenticado, mas não tem autenticação ainda.
         var project = findEntity(id);
-        if (naoAutenticado && project.getStatus() == ProjectStatus.PROPOSED) {
+        if (naoAutenticado && project.getStatus() != ProjectStatus.APPROVED) {
             throw new ResourceNotFoundException("projeto não encontrado");
         }
         return mapper.toResponse(project);
@@ -77,7 +76,6 @@ public class ProjectService {
         var project = findEntity(id);
         var userRole = Role.PROFESSOR; //não tem header ainda para se pegar o role do usuário.
         if (userRole != Role.PROFESSOR) {
-            //lugar de erro 403
             throw new AccessDeniedException("Erro de não professor, tentando alterar projeto");
         }
         if (request.projectType() != project.getProjectType()) {
