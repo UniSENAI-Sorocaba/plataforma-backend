@@ -22,6 +22,22 @@ curl http://localhost:8080/actuator/health
 mvn verify
 ```
 
+## Autenticação JWT
+
+O modo padrão mantém a aplicação sem autenticação para preservar o bootstrap local. Para ativar o login e a proteção das demais rotas, forneça as propriedades abaixo por variável de ambiente ou configuração externa; as chaves não devem ser versionadas.
+
+```yaml
+security:
+  jwt:
+    enabled: true
+    issuer: https://plataforma.example.edu.br
+    audience: plataforma-api
+    public-key: ${JWT_PUBLIC_KEY}
+    private-key: ${JWT_PRIVATE_KEY}
+```
+
+O endpoint `POST /api/v1/auth/login` recebe `{ "email": "...", "password": "..." }` e retorna um access token Bearer RS256 com validade de 15 minutos. A persistência real de usuários será conectada ao repositório de identidade da Fase 2; até essa integração, a implementação usa o contrato `UserAccountRepository`.
+
 ## Governança
 
 Consulte `.governance-baseline` antes de qualquer mudança. A tag declarada ainda precisa ser publicada no repositório de governança e resolver para o SHA registrado; até lá, o gate remoto de spec-compliance permanece uma pendência organizacional.

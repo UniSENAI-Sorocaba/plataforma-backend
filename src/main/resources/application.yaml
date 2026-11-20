@@ -1,6 +1,9 @@
 spring:
   application:
     name: plataforma-backend
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
 management:
   endpoints:
     web:

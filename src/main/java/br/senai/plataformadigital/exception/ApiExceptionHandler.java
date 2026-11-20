@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import br.senai.plataformadigital.auth.InvalidCredentialsException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -36,6 +37,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     ResponseEntity<ApiError> handleConflict(ConflictException exception, WebRequest request) {
         return error(HttpStatus.CONFLICT, "CONFLICT", exception.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    ResponseEntity<ApiError> handleInvalidCredentials(InvalidCredentialsException exception, WebRequest request) {
+        return error(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Credenciais inválidas.", request, List.of());
     }
 
     @ExceptionHandler(Exception.class)
