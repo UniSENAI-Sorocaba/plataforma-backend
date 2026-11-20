@@ -12,10 +12,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import br.senai.plataformadigital.auth.InvalidCredentialsException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(ApiExceptionHandler.class);
     private final Clock clock;
 
     public ApiExceptionHandler(Clock clock) {
@@ -46,6 +49,7 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> handleUnexpected(Exception exception, WebRequest request) {
+        LOG.error("Unhandled API exception", exception);
         return error(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Não foi possível processar a requisição.", request,
                 List.of());
     }
