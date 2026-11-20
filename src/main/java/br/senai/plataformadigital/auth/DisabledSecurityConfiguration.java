@@ -12,7 +12,11 @@ import org.springframework.security.web.SecurityFilterChain;
 public class DisabledSecurityConfiguration {
     @Bean
     SecurityFilterChain developmentSecurityFilterChain(HttpSecurity http) throws Exception {
-        return http.csrf(AbstractHttpConfigurer::disable)
+        // Mantém o modo local sem filtros de segurança nas rotas da aplicação.
+        // Assim, uma identidade de teste/integração fornecida pelo servlet não é
+        // substituída por um principal anônimo; o modo JWT usa outra cadeia.
+        return http.securityMatcher("/__security-disabled__")
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
                 .build();
     }
