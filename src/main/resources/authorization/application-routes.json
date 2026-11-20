@@ -251,5 +251,59 @@
     "resource": null,
     "resourceVariable": "id",
     "scopeVariable": "id"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/extension/projects/{projectId}/periods/{periodId}/activities",
+    "publicAccess": false,
+    "action": "SUBMIT_EXTENSION_ACTIVITY",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/projects/{projectId}/periods/{periodId}/activities/mine",
+    "publicAccess": false,
+    "action": "LIST_OWN_EXTENSION_ACTIVITIES",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/projects/{projectId}/periods/{periodId}/activities",
+    "publicAccess": false,
+    "action": "LIST_EXTENSION_ACTIVITIES",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/projects/{projectId}/periods/{periodId}/hours/mine",
+    "publicAccess": false,
+    "action": "READ_OWN_EXTENSION_HOURS",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/extension/activities/{id}",
+    "publicAccess": false,
+    "action": "CORRECT_EXTENSION_ACTIVITY",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/extension/activities/{id}/decision",
+    "publicAccess": false,
+    "action": "DECIDE_EXTENSION_ACTIVITY",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
   }
 ]

@@ -14,16 +14,19 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
 @RequestMapping("/api/v1/extension")
 @ConditionalOnProperty(name = "spring.datasource.url")
 public class ExtensionController {
     private final ExtensionService service;
+    private final ActivityService activityService;
     private final AuthenticatedSubjectProvider subjects;
 
-    public ExtensionController(ExtensionService service, AuthenticatedSubjectProvider subjects) {
+    public ExtensionController(ExtensionService service, ActivityService activityService, AuthenticatedSubjectProvider subjects) {
         this.service = service;
+        this.activityService = activityService;
         this.subjects = subjects;
     }
 
@@ -59,6 +62,37 @@ public class ExtensionController {
 
     @PostMapping("/applications/{id}/withdraw")
     ApplicationResponse withdraw(@PathVariable UUID id) { return service.withdraw(id, actor()); }
+
+    @PostMapping("/projects/{projectId}/periods/{periodId}/activities")
+    ResponseEntity<ActivityResponse> submitActivity(@PathVariable UUID projectId, @PathVariable UUID periodId,
+                                                     @Valid @RequestBody ActivityRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(activityService.submit(projectId, periodId, request, actor()));
+    }
+
+    @GetMapping("/projects/{projectId}/periods/{periodId}/activities/mine")
+    List<ActivityResponse> mine(@PathVariable UUID projectId, @PathVariable UUID periodId) {
+        return activityService.mine(projectId, periodId, actor());
+    }
+
+    @GetMapping("/projects/{projectId}/periods/{periodId}/activities")
+    List<ActivityResponse> projectActivities(@PathVariable UUID projectId, @PathVariable UUID periodId) {
+        return activityService.project(projectId, periodId, actor());
+    }
+
+    @GetMapping("/projects/{projectId}/periods/{periodId}/hours/mine")
+    HoursTotalResponse total(@PathVariable UUID projectId, @PathVariable UUID periodId) {
+        return activityService.total(projectId, periodId, actor());
+    }
+
+    @PutMapping("/activities/{id}")
+    ActivityResponse correct(@PathVariable UUID id, @Valid @RequestBody ActivityRequest request) {
+        return activityService.correct(id, request, actor());
+    }
+
+    @PatchMapping("/activities/{id}/decision")
+    ActivityResponse decide(@PathVariable UUID id, @Valid @RequestBody ActivityDecisionRequest request) {
+        return activityService.decide(id, request, actor());
+    }
 
     private UUID actor() {
         return subjects.currentSubject().map(subject -> UUID.fromString(subject.id()))
