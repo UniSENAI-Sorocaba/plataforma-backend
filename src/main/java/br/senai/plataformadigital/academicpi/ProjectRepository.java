@@ -2,6 +2,7 @@ package br.senai.plataformadigital.academicpi;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -117,8 +118,8 @@ public class ProjectRepository {
         return jdbc.query("""
                 SELECT id FROM academic_pi.enrollment_period
                 WHERE project_id = ? AND starts_at <= ? AND ? < ends_at
-                ORDER BY starts_at DESC LIMIT 1
-                """, (rs, row) -> rs.getObject("id", UUID.class), projectId, now, now)
+                ORDER BY starts_at DESC, ends_at DESC, id DESC LIMIT 1
+                """, (rs, row) -> rs.getObject("id", UUID.class), projectId, Timestamp.from(now), Timestamp.from(now))
                 .stream().findFirst().orElse(null);
     }
 
@@ -128,7 +129,8 @@ public class ProjectRepository {
                 INSERT INTO academic_pi.enrollment_period
                     (id, project_id, academic_term, starts_at, ends_at, created_by)
                 VALUES (?, ?, ?, ?, ?, ?)
-                """, id, projectId, request.academicTerm().trim(), request.startsAt(), request.endsAt(), actor);
+                """, id, projectId, request.academicTerm().trim(), Timestamp.from(request.startsAt()),
+                Timestamp.from(request.endsAt()), actor);
         return findPeriod(projectId, id);
     }
 
