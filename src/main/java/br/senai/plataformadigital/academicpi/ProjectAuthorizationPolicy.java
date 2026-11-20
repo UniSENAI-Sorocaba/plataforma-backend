@@ -22,6 +22,8 @@ public class ProjectAuthorizationPolicy implements AuthorizationPolicyContributi
             case "CREATE_PROJECT", "READ_PROJECT", "REQUEST_PARTICIPATION",
                     "MANAGE_PROJECT", "DECIDE_PARTICIPATION", "REMOVE_PARTICIPANT",
                     "CREATE_ENROLLMENT_PERIOD", "CHANGE_PROJECT_LIFECYCLE", "WITHDRAW_PARTICIPATION" -> true;
+            case "LIST_PROJECT_PERIODS", "LIST_PROJECT_PARTICIPATION", "LIST_PROJECT_PARTICIPANTS",
+                    "LIST_OWN_PARTICIPATION" -> true;
             default -> false;
         };
     }
@@ -38,6 +40,9 @@ public class ProjectAuthorizationPolicy implements AuthorizationPolicyContributi
             case "CREATE_ENROLLMENT_PERIOD" -> hasRole(user, "COORDENACAO");
             case "CHANGE_PROJECT_LIFECYCLE" -> responsible(request.scope().orElseThrow(), user);
             case "WITHDRAW_PARTICIPATION" -> activeStudent(user) && requestStudent(request.scope().orElseThrow(), user);
+            case "LIST_PROJECT_PERIODS", "LIST_PROJECT_PARTICIPATION", "LIST_PROJECT_PARTICIPANTS" ->
+                    responsible(request.scope().orElseThrow(), user);
+            case "LIST_OWN_PARTICIPATION" -> activeStudent(user);
             default -> false;
         };
     }

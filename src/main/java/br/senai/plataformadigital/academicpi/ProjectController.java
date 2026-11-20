@@ -50,6 +50,16 @@ public class ProjectController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.createPeriod(id, request, actor()));
     }
 
+    @GetMapping("/projects/{id}/enrollment-periods")
+    List<EnrollmentPeriodResponse> periods(@PathVariable UUID id) {
+        return service.periods(id, actor());
+    }
+
+    @GetMapping("/projects/{id}/participation-requests")
+    List<ParticipationRequestResponse> projectRequests(@PathVariable UUID id) {
+        return service.projectRequests(id, actor());
+    }
+
     @PatchMapping("/projects/{id}/publication")
     ProjectResponse publication(@PathVariable UUID id, @Valid @RequestBody PublicationRequest request) {
         return service.changePublication(id, request.publicationStatus(), actor());
@@ -73,6 +83,16 @@ public class ProjectController {
     @PostMapping("/participation-requests/{id}/withdraw")
     ParticipationRequestResponse withdraw(@PathVariable UUID id) {
         return service.withdraw(id, actor());
+    }
+
+    @GetMapping("/participation-requests/mine")
+    List<ParticipationRequestResponse> ownRequests() {
+        return service.ownRequests(actor());
+    }
+
+    @GetMapping("/projects/{projectId}/periods/{periodId}/participants")
+    List<ParticipantResponse> participants(@PathVariable UUID projectId, @PathVariable UUID periodId) {
+        return service.participants(projectId, periodId, actor());
     }
 
     @DeleteMapping("/projects/{projectId}/periods/{periodId}/participants/{studentId}")

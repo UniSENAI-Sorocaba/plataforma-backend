@@ -49,6 +49,26 @@ public class ProjectService {
         return repository.findPublic();
     }
 
+    public List<EnrollmentPeriodResponse> periods(UUID projectId, UUID actor) {
+        requireResponsible(projectId, actor);
+        return repository.findPeriods(projectId);
+    }
+
+    public List<ParticipationRequestResponse> projectRequests(UUID projectId, UUID actor) {
+        requireResponsible(projectId, actor);
+        return repository.findProjectRequests(projectId);
+    }
+
+    public List<ParticipationRequestResponse> ownRequests(UUID actor) {
+        requireStudent(actor);
+        return repository.findStudentRequests(actor);
+    }
+
+    public List<ParticipantResponse> participants(UUID projectId, UUID periodId, UUID actor) {
+        requireResponsible(projectId, actor);
+        return repository.findParticipants(projectId, periodId);
+    }
+
     @Transactional
     public EnrollmentPeriodResponse createPeriod(UUID projectId, EnrollmentPeriodRequest request, UUID actor) {
         if (!repository.hasRole(actor, "COORDENACAO")) {
