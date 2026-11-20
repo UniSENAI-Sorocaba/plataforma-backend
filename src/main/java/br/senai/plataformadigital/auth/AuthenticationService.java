@@ -4,13 +4,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnBean({UserAccountRepository.class, JwtTokenService.class})
 @ConditionalOnProperty(name = "security.jwt.enabled", havingValue = "true")
 public class AuthenticationService {
     private final UserAccountRepository repository;

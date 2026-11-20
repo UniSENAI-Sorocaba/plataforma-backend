@@ -28,5 +28,91 @@
     "method": "POST",
     "path": "/api/v1/auth/password-recovery/reset",
     "publicAccess": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/projects",
+    "publicAccess": false,
+    "action": "CREATE_PROJECT",
+    "resource": "project",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/projects/{id}",
+    "publicAccess": false,
+    "action": "READ_PROJECT",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/projects",
+    "publicAccess": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/projects/{id}/enrollment-periods",
+    "publicAccess": false,
+    "action": "CREATE_ENROLLMENT_PERIOD",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/projects/{id}/publication",
+    "publicAccess": false,
+    "action": "MANAGE_PROJECT",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/projects/{id}/lifecycle",
+    "publicAccess": false,
+    "action": "CHANGE_PROJECT_LIFECYCLE",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/projects/{id}/participation-requests",
+    "publicAccess": false,
+    "action": "REQUEST_PARTICIPATION",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/participation-requests/{id}",
+    "publicAccess": false,
+    "action": "DECIDE_PARTICIPATION",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/participation-requests/{id}/withdraw",
+    "publicAccess": false,
+    "action": "WITHDRAW_PARTICIPATION",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/projects/{projectId}/periods/{periodId}/participants/{studentId}",
+    "publicAccess": false,
+    "action": "REMOVE_PARTICIPANT",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
   }
 ]

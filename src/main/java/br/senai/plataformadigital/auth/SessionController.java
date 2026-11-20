@@ -5,7 +5,6 @@ import java.util.Map;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 /** HTTP boundary for rotating and revoking opaque refresh-token sessions. */
 @RestController
 @RequestMapping("/api/v1/auth")
-@ConditionalOnBean({RefreshTokenService.class, JwtTokenService.class, UserAccountRepository.class})
 @ConditionalOnProperty(name = "security.jwt.enabled", havingValue = "true")
 public class SessionController {
     private final RefreshTokenService refreshTokens;
