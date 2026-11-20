@@ -21,7 +21,8 @@ public class ProjectAuthorizationPolicy implements AuthorizationPolicyContributi
         return switch (action) {
             case "CREATE_PROJECT", "READ_PROJECT", "REQUEST_PARTICIPATION",
                     "MANAGE_PROJECT", "DECIDE_PARTICIPATION", "REMOVE_PARTICIPANT",
-                    "CREATE_ENROLLMENT_PERIOD", "CHANGE_PROJECT_LIFECYCLE", "WITHDRAW_PARTICIPATION" -> true;
+                    "CREATE_ENROLLMENT_PERIOD", "CHANGE_PROJECT_LIFECYCLE", "WITHDRAW_PARTICIPATION",
+                    "CREATE_DELIVERABLE" -> true;
             case "LIST_PROJECT_PERIODS", "LIST_PROJECT_PARTICIPATION", "LIST_PROJECT_PARTICIPANTS",
                     "LIST_OWN_PARTICIPATION", "LIST_MANAGED_PROJECTS" -> true;
             default -> false;
@@ -40,6 +41,7 @@ public class ProjectAuthorizationPolicy implements AuthorizationPolicyContributi
             case "CREATE_ENROLLMENT_PERIOD" -> hasRole(user, "COORDENACAO");
             case "CHANGE_PROJECT_LIFECYCLE" -> responsible(request.scope().orElseThrow(), user);
             case "WITHDRAW_PARTICIPATION" -> activeStudent(user) && requestStudent(request.scope().orElseThrow(), user);
+            case "CREATE_DELIVERABLE" -> activeStudent(user) && activeParticipant(request.scope().orElseThrow(), user);
             case "LIST_PROJECT_PERIODS", "LIST_PROJECT_PARTICIPATION", "LIST_PROJECT_PARTICIPANTS" ->
                     responsible(request.scope().orElseThrow(), user);
             case "LIST_OWN_PARTICIPATION" -> activeStudent(user);
@@ -96,5 +98,13 @@ public class ProjectAuthorizationPolicy implements AuthorizationPolicyContributi
         return Boolean.TRUE.equals(jdbc.queryForObject("""
                 SELECT EXISTS (SELECT 1 FROM academic_pi.project_responsible WHERE user_id = ?)
                 """, Boolean.class, user));
+    }
+
+    private boolean activeParticipant(String projectId, UUID user) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS (SELECT 1 FROM academic_pi.project_participant pp
+                    JOIN academic_pi.enrollment_period ep ON ep.id = pp.period_id AND ep.project_id = pp.project_id
+                    WHERE pp.project_id = ?::uuid AND pp.student_id = ? AND pp.status = 'ACTIVE')
+                """, Boolean.class, projectId, user));
     }
 }

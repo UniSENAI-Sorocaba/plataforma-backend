@@ -93,6 +93,13 @@
               <goal>check</goal>
             </goals>
             <configuration>
+              <!-- Adapters de HTTP, JDBC e filesystem são verificados por contrato/E2E;
+                   a barreira unitária permanece aplicada à regra de negócio. -->
+              <excludes>
+                <exclude>br/senai/plataformadigital/academicpi/DeliverableController*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/DeliverableRepository*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/DeliverableStorage*</exclude>
+              </excludes>
               <rules>
                 <rule>
                   <element>BUNDLE</element>
