@@ -12,6 +12,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import br.senai.plataformadigital.auth.passwordrecovery.InMemoryPasswordRecoveryTokenRepository;
+import br.senai.plataformadigital.auth.passwordrecovery.JdbcPasswordRecoveryTokenRepository;
+import br.senai.plataformadigital.auth.passwordrecovery.PasswordRecoveryTokenPolicy;
+import br.senai.plataformadigital.auth.passwordrecovery.PasswordRecoveryTokenRepository;
+import br.senai.plataformadigital.auth.passwordrecovery.PasswordRecoveryTokenService;
+
 /** Activates the DB-005 adapter only when JWT mode and a datasource are configured. */
 @Configuration
 @ConditionalOnProperty(name = "security.jwt.enabled", havingValue = "true")
@@ -20,6 +26,12 @@ class SessionPersistenceConfiguration {
     @ConditionalOnBean(DataSource.class)
     RefreshTokenRepository refreshTokenRepository(DataSource dataSource) {
         return new JdbcRefreshTokenRepository(dataSource);
+    }
+
+    @Bean
+    @ConditionalOnBean(DataSource.class)
+    UserAccountRepository userAccountRepository(DataSource dataSource) {
+        return new JdbcUserAccountRepository(dataSource);
     }
 
     @Bean
@@ -34,5 +46,26 @@ class SessionPersistenceConfiguration {
             Clock clock,
             @Value("${security.session.refresh-lifetime:30d}") Duration lifetime) {
         return new RefreshTokenService(repository, clock, lifetime);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(value = {PasswordRecoveryTokenRepository.class, DataSource.class})
+    PasswordRecoveryTokenRepository passwordRecoveryTokenRepository() {
+        return new InMemoryPasswordRecoveryTokenRepository();
+    }
+
+    @Bean
+    @ConditionalOnBean(DataSource.class)
+    @ConditionalOnMissingBean(PasswordRecoveryTokenRepository.class)
+    PasswordRecoveryTokenRepository jdbcPasswordRecoveryTokenRepository(DataSource dataSource) {
+        return new JdbcPasswordRecoveryTokenRepository(dataSource);
+    }
+
+    @Bean
+    PasswordRecoveryTokenService passwordRecoveryTokenService(
+            PasswordRecoveryTokenRepository repository,
+            Clock clock,
+            @Value("${security.password-recovery.lifetime:30m}") Duration lifetime) {
+        return new PasswordRecoveryTokenService(repository, clock, PasswordRecoveryTokenPolicy.withLifetime(lifetime));
     }
 }

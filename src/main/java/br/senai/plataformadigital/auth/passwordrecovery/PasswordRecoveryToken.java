@@ -57,6 +57,11 @@ public final class PasswordRecoveryToken {
         return new PasswordRecoveryToken(id, subject, tokenHash, issuedAt, expiresAt, null, null);
     }
 
+    static PasswordRecoveryToken restored(UUID id, String subject, String tokenHash, Instant issuedAt,
+            Instant expiresAt, Instant usedAt, Instant revokedAt) {
+        return new PasswordRecoveryToken(id, subject, tokenHash, issuedAt, expiresAt, usedAt, revokedAt);
+    }
+
     public UUID id() {
         return id;
     }
