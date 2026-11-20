@@ -53,6 +53,8 @@ public class JwtConfiguration {
                                 "/api/v1/auth/first-access",
                                 "/api/v1/auth/password-recovery/request",
                                 "/api/v1/auth/password-recovery/reset",
+                                "/api/v1/deliverables/*/content",
+                                "/api/v1/deliverables/*/download",
                                 "/actuator/health")
                         .permitAll()
                         .anyRequest().authenticated())
