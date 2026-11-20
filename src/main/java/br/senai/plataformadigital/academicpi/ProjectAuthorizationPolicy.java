@@ -3,12 +3,12 @@ package br.senai.plataformadigital.academicpi;
 import br.senai.plataformadigital.auth.api.authorization.AuthenticatedSubject;
 import br.senai.plataformadigital.auth.api.authorization.AuthorizationPolicyContribution;
 import java.util.UUID;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnBean(JdbcTemplate.class)
+@ConditionalOnProperty(name = "spring.datasource.url")
 public class ProjectAuthorizationPolicy implements AuthorizationPolicyContribution {
     private final JdbcTemplate jdbc;
 
