@@ -34,7 +34,12 @@ public final class RefreshTokenService {
     }
 
     public synchronized IssuedRefreshToken issue(UUID userId) {
-        return issue(userId, UUID.randomUUID(), UUID.randomUUID());
+        UUID sessionId = UUID.randomUUID();
+        UUID familyId = UUID.randomUUID();
+        Instant issuedAt = clock.instant();
+        Instant expiresAt = issuedAt.plus(lifetime);
+        repository.createSession(sessionId, userId, familyId, issuedAt, expiresAt);
+        return issue(userId, sessionId, familyId);
     }
 
     public synchronized IssuedRefreshToken rotate(String rawToken) {
@@ -52,8 +57,7 @@ public final class RefreshTokenService {
     }
 
     public synchronized void revokeSession(UUID sessionId) {
-        Instant now = clock.instant();
-        repository.findBySession(sessionId).forEach(token -> repository.replace(token.revokedAt(now)));
+        repository.revokeSession(sessionId, clock.instant());
     }
 
     public synchronized void revokeFamily(UUID familyId) {
@@ -61,7 +65,7 @@ public final class RefreshTokenService {
     }
 
     private void revokeFamily(UUID familyId, Instant now) {
-        repository.findByFamily(familyId).forEach(token -> repository.replace(token.revokedAt(now)));
+        repository.revokeFamily(familyId, now);
     }
 
     private IssuedRefreshToken issue(UUID userId, UUID sessionId, UUID familyId) {
