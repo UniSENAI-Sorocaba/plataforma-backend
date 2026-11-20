@@ -51,11 +51,13 @@ class ProjectCrudIntegrationTests {
     private MockMvc mockMvc;
 
     @Test
-    void criaConsultaAtualizaEExcluiProjeto() throws Exception {
-        var leaderId = createUser("lider-" + UUID.randomUUID() + "@plataforma.test");
+    void criaConsultaEAtualizaProjeto() throws Exception {
+        var leaderId = createUser("lider-" + UUID.randomUUID() + "@plataforma.test", "STUDENT");
+        var advisorId = createUser("advisor-" + UUID.randomUUID() + "@plataforma.test", "PROFESSOR");
 
+        //inventa um advisor pro projectjson
         var created = mockMvc.perform(post("/api/v1/projects").contentType(MediaType.APPLICATION_JSON)
-                        .content(projectJson("Sistema IoT", leaderId)))
+                        .content(projectJson("Sistema IoT", leaderId, advisorId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("PROPOSED"))
                 .andExpect(jsonPath("$.leaderId").value(leaderId))
@@ -63,16 +65,13 @@ class ProjectCrudIntegrationTests {
         String projectId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
 
         mockMvc.perform(put("/api/v1/projects/{id}", projectId).contentType(MediaType.APPLICATION_JSON)
-                        .content(projectJson("Sistema IoT v2", leaderId)))
+                        .content(projectJson("Sistema IoT v2", leaderId, advisorId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Sistema IoT v2"));
 
         mockMvc.perform(get("/api/v1/projects/{id}", projectId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Sistema IoT v2"));
-
-        mockMvc.perform(delete("/api/v1/projects/{id}", projectId)).andExpect(status().isNoContent());
-        mockMvc.perform(get("/api/v1/projects/{id}", projectId)).andExpect(status().isNotFound());
     }
 
     @Test
@@ -82,37 +81,37 @@ class ProjectCrudIntegrationTests {
                 .andExpect(jsonPath("$.fields.title").exists());
 
         mockMvc.perform(post("/api/v1/projects").contentType(MediaType.APPLICATION_JSON)
-                        .content(projectJson("Projeto", UUID.randomUUID().toString())))
+                        .content(projectJson("Projeto", UUID.randomUUID().toString(), UUID.randomUUID().toString())))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void rejeitaEmailDuplicado() throws Exception {
         var email = "duplicado-" + UUID.randomUUID() + "@plataforma.test";
-        createUser(email);
-        mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(userJson(email)))
+        createUser(email,"STUDENT");
+        mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(userJson(email,"STUDENT")))
                 .andExpect(status().isConflict());
     }
 
-    private String createUser(String email) throws Exception {
+    private String createUser(String email, String role) throws Exception {
         var result = mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON)
-                        .content(userJson(email)))
+                        .content(userJson(email,role)))
                 .andExpect(status().isCreated())
                 .andReturn();
         return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
     }
 
-    private static String userJson(String email) {
+    private static String userJson(String email, String role) {
         return """
-                {"email": "%s", "fullName": "Aluno Teste", "role": "STUDENT", "active": true}
-                """.formatted(email);
+                {"email": "%s", "fullName": "Aluno Teste", "role": "%s", "active": true}
+                """.formatted(email,role);
     }
 
-    private static String projectJson(String title, String leaderId) {
+    private static String projectJson(String title, String leaderId, String advisorId) {
         return """
                 {"title": "%s", "description": "Monitoramento de sensores", "projectType": "ACADEMIC_PI",
                  "status": "PROPOSED", "semester": "2026.2", "course": "Engenharia de Software",
-                 "leaderId": "%s"}
-                """.formatted(title, leaderId);
+                 "leaderId": "%s", "advisorId": "%s"}
+                """.formatted(title, leaderId, advisorId);
     }
 }

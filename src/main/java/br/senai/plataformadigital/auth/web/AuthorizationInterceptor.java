@@ -38,6 +38,17 @@ public final class AuthorizationInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        
+        //talvez faça o swagger rodar
+        String uri = request.getRequestURI();
+        if (uri.startsWith("/swagger-ui") || 
+            uri.startsWith("/v3/api-docs") || 
+            uri.equals("/swagger-ui.html") ||
+            uri.startsWith("/swagger-resources") ||
+            uri.startsWith("/webjars")) {
+            return true;
+        }
+        
         String path = null;
         if (handler instanceof HandlerMethod method) {
             if (method.getBeanType() == BasicErrorController.class && request.getDispatcherType() == DispatcherType.ERROR) {
