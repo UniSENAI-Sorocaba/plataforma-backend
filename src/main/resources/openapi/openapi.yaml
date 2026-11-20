@@ -33,8 +33,206 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         '409':
           $ref: '#/components/responses/ConflictError'
+  /api/v1/projects:
+    post:
+      operationId: createProject
+      summary: Cria um projeto de PI/extensão
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProjectRequest' }
+      responses:
+        '201':
+          description: Projeto criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/projects/{id}:
+    get:
+      operationId: getProject
+      summary: Consulta um projeto
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/ProjectId' }]
+      responses:
+        '200':
+          description: Projeto encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+  /api/v1/public/projects:
+    get:
+      operationId: listPublicProjects
+      summary: Lista projetos publicados e ativos
+      responses:
+        '200':
+          description: Catálogo público
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Project' }
+  /api/v1/projects/{id}/enrollment-periods:
+    post:
+      operationId: createEnrollmentPeriod
+      summary: Abre período de inscrição para um projeto
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/ProjectId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EnrollmentPeriodRequest' }
+      responses:
+        '201':
+          description: Período criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnrollmentPeriod' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/projects/{id}/publication:
+    patch:
+      operationId: changeProjectPublication
+      summary: Publica ou despublica um projeto ativo
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/ProjectId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [publicationStatus]
+              properties:
+                publicationStatus: { type: string, enum: [DRAFT, PUBLISHED] }
+      responses:
+        '200':
+          description: Projeto atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/projects/{id}/lifecycle:
+    patch:
+      operationId: changeProjectLifecycle
+      summary: Arquiva ou reabre um projeto
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/ProjectId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lifecycleStatus]
+              properties:
+                lifecycleStatus: { type: string, enum: [ACTIVE, ARCHIVED] }
+      responses:
+        '200':
+          description: Projeto atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/projects/{id}/participation-requests:
+    post:
+      operationId: requestProjectParticipation
+      summary: Solicita participação no período vigente
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/ProjectId' }]
+      responses:
+        '201':
+          description: Solicitação criada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ParticipationRequest' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/participation-requests/{id}:
+    patch:
+      operationId: decideParticipationRequest
+      summary: Aprova ou nega uma solicitação
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [APPROVED, DENIED] }
+      responses:
+        '200':
+          description: Solicitação decidida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ParticipationRequest' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/participation-requests/{id}/withdraw:
+    post:
+      operationId: withdrawParticipationRequest
+      summary: Desiste de uma solicitação pendente no período vigente
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      responses:
+        '200':
+          description: Solicitação retirada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ParticipationRequest' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/projects/{projectId}/periods/{periodId}/participants/{studentId}:
+    delete:
+      operationId: removeProjectParticipant
+      summary: Remove participante com justificativa
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/ProjectId' }
+        - name: periodId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: studentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 1000 }
+      responses:
+        '204': { description: Participante removido }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+        '409': { $ref: '#/components/responses/ConflictError' }
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   parameters:
+    ProjectId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    RequestId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
     CorrelationId:
       name: X-Correlation-Id
       in: header
@@ -43,6 +241,68 @@ components:
         type: string
         maxLength: 128
   schemas:
+    ProjectRequest:
+      type: object
+      required: [title, classification, continuity, publicationStatus, responsibleTeacherIds]
+      properties:
+        title: { type: string, minLength: 5, maxLength: 200 }
+        summary: { type: string, minLength: 20, maxLength: 500 }
+        description: { type: string, minLength: 50, maxLength: 5000 }
+        classification: { type: string, enum: [PI, EXTENSION, BOTH] }
+        continuity: { type: string, enum: [CONTINUOUS, FIXED_END] }
+        endDate: { type: string, format: date }
+        publicationStatus: { type: string, enum: [DRAFT, PUBLISHED] }
+        responsibleTeacherIds:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
+    Project:
+      type: object
+      required: [id, title, classification, continuity, publicationStatus, lifecycleStatus, responsibleTeacherIds]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        summary: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        classification: { type: string, enum: [PI, EXTENSION, BOTH] }
+        continuity: { type: string, enum: [CONTINUOUS, FIXED_END] }
+        endDate: { type: string, format: date, nullable: true }
+        publicationStatus: { type: string, enum: [DRAFT, PUBLISHED] }
+        lifecycleStatus: { type: string, enum: [ACTIVE, ARCHIVED] }
+        responsibleTeacherIds:
+          type: array
+          items: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    EnrollmentPeriodRequest:
+      type: object
+      required: [academicTerm, startsAt, endsAt]
+      properties:
+        academicTerm: { type: string, minLength: 1, maxLength: 20 }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+    EnrollmentPeriod:
+      allOf:
+        - $ref: '#/components/schemas/EnrollmentPeriodRequest'
+        - type: object
+          required: [id, projectId, createdAt, updatedAt]
+          properties:
+            id: { type: string, format: uuid }
+            projectId: { type: string, format: uuid }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+    ParticipationRequest:
+      type: object
+      required: [id, projectId, periodId, studentId, status, requestedAt]
+      properties:
+        id: { type: string, format: uuid }
+        projectId: { type: string, format: uuid }
+        periodId: { type: string, format: uuid }
+        studentId: { type: string, format: uuid }
+        status: { type: string, enum: [PENDING, APPROVED, DENIED, WITHDRAWN] }
+        requestedAt: { type: string, format: date-time }
+        decidedAt: { type: string, format: date-time, nullable: true }
+        withdrawnAt: { type: string, format: date-time, nullable: true }
     ApiError:
       type: object
       required: [timestamp, status, code, message, path, correlationId, details]

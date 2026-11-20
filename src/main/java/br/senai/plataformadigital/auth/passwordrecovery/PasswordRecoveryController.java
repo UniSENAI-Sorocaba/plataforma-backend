@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 /** HTTP contract for neutral recovery requests and one-use password reset. */
 @RestController
 @RequestMapping("/api/v1/auth/password-recovery")
-@ConditionalOnBean({PasswordRecoveryTokenService.class, UserAccountRepository.class, CredentialService.class})
+@ConditionalOnProperty(name = "security.jwt.enabled", havingValue = "true")
 public class PasswordRecoveryController {
     private final PasswordRecoveryTokenService tokens;
     private final UserAccountRepository accounts;

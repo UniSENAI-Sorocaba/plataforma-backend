@@ -6,9 +6,10 @@ import java.time.Duration;
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -20,16 +21,17 @@ import br.senai.plataformadigital.auth.passwordrecovery.PasswordRecoveryTokenSer
 
 /** Activates the DB-005 adapter only when JWT mode and a datasource are configured. */
 @Configuration
+@AutoConfigureAfter(DataSourceAutoConfiguration.class)
 @ConditionalOnProperty(name = "security.jwt.enabled", havingValue = "true")
 class SessionPersistenceConfiguration {
     @Bean
-    @ConditionalOnBean(DataSource.class)
+    @ConditionalOnProperty(name = "spring.datasource.url")
     RefreshTokenRepository refreshTokenRepository(DataSource dataSource) {
         return new JdbcRefreshTokenRepository(dataSource);
     }
 
     @Bean
-    @ConditionalOnBean(DataSource.class)
+    @ConditionalOnProperty(name = "spring.datasource.url")
     UserAccountRepository userAccountRepository(DataSource dataSource) {
         return new JdbcUserAccountRepository(dataSource);
     }
@@ -49,13 +51,13 @@ class SessionPersistenceConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(value = {PasswordRecoveryTokenRepository.class, DataSource.class})
+    @ConditionalOnMissingBean(PasswordRecoveryTokenRepository.class)
     PasswordRecoveryTokenRepository passwordRecoveryTokenRepository() {
         return new InMemoryPasswordRecoveryTokenRepository();
     }
 
     @Bean
-    @ConditionalOnBean(DataSource.class)
+    @ConditionalOnProperty(name = "spring.datasource.url")
     @ConditionalOnMissingBean(PasswordRecoveryTokenRepository.class)
     PasswordRecoveryTokenRepository jdbcPasswordRecoveryTokenRepository(DataSource dataSource) {
         return new JdbcPasswordRecoveryTokenRepository(dataSource);
