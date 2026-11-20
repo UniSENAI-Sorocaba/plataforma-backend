@@ -159,5 +159,24 @@
     "resource": null,
     "resourceVariable": "projectId",
     "scopeVariable": "projectId"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/projects/{projectId}/periods/{periodId}/deliverables",
+    "publicAccess": false,
+    "action": "CREATE_DELIVERABLE",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/deliverables/{id}/content",
+    "publicAccess": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/deliverables/{id}/download",
+    "publicAccess": true
   }
 ]

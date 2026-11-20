@@ -292,6 +292,75 @@ paths:
         '204': { description: Participante removido }
         '404': { $ref: '#/components/responses/NotFoundError' }
         '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/projects/{projectId}/periods/{periodId}/deliverables:
+    post:
+      operationId: initiateDeliverableUpload
+      summary: Emite URL temporária para upload de entregável
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: periodId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeliverableInitiationRequest' }
+      responses:
+        '201':
+          description: Upload autorizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Deliverable' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/deliverables/{id}/content:
+    put:
+      operationId: uploadDeliverableContent
+      summary: Envia conteúdo usando URL temporária
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream: {}
+      responses:
+        '200':
+          description: Entregável armazenado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Deliverable' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/deliverables/{id}/download:
+    get:
+      operationId: downloadDeliverable
+      summary: Baixa entregável usando URL temporária
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Conteúdo do arquivo
+          content:
+            application/octet-stream: {}
+        '409': { $ref: '#/components/responses/ConflictError' }
 components:
   securitySchemes:
     bearerAuth:
@@ -390,6 +459,32 @@ components:
         joinedAt: { type: string, format: date-time }
         removedAt: { type: string, format: date-time, nullable: true }
         removalReason: { type: string, nullable: true }
+    DeliverableInitiationRequest:
+      type: object
+      required: [fileName, contentType, sizeBytes]
+      properties:
+        fileName: { type: string, minLength: 1, maxLength: 255 }
+        contentType: { type: string, maxLength: 120 }
+        sizeBytes: { type: integer, format: int64, minimum: 1, maximum: 26214400 }
+    Deliverable:
+      type: object
+      required: [id, projectId, periodId, ownerId, fileName, contentType, sizeBytes, version, status, createdAt, uploadExpiresAt]
+      properties:
+        id: { type: string, format: uuid }
+        projectId: { type: string, format: uuid }
+        periodId: { type: string, format: uuid }
+        ownerId: { type: string, format: uuid }
+        fileName: { type: string }
+        contentType: { type: string }
+        sizeBytes: { type: integer, format: int64 }
+        sha256: { type: string, nullable: true }
+        version: { type: integer }
+        status: { type: string, enum: [PENDING_UPLOAD, AVAILABLE, CANCELLED, EXPIRED] }
+        createdAt: { type: string, format: date-time }
+        uploadedAt: { type: string, format: date-time, nullable: true }
+        uploadExpiresAt: { type: string, format: date-time }
+        uploadUrl: { type: string, nullable: true }
+        downloadUrl: { type: string, nullable: true }
     ApiError:
       type: object
       required: [timestamp, status, code, message, path, correlationId, details]
