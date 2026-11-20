@@ -74,7 +74,15 @@ public final class RefreshTokenService {
         String rawToken = generateRawToken();
         repository.save(new RefreshTokenRecord(UUID.randomUUID(), userId, sessionId, familyId,
                 hash(rawToken), issuedAt, expiresAt, null, null));
-        return new IssuedRefreshToken(rawToken, sessionId, familyId, expiresAt);
+        return new IssuedRefreshToken(rawToken, userId, sessionId, familyId, expiresAt);
+    }
+
+    /** Revokes the session identified by a refresh token without revealing whether it existed. */
+    public synchronized void revokeToken(String rawToken) {
+        if (rawToken == null || rawToken.isBlank()) {
+            return;
+        }
+        repository.findByHash(hash(rawToken)).ifPresent(record -> revokeSession(record.sessionId()));
     }
 
     private RefreshTokenRecord find(String rawToken) {

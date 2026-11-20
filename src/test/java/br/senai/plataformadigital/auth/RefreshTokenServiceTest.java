@@ -61,6 +61,17 @@ class RefreshTokenServiceTest {
     }
 
     @Test
+    void logoutByTokenRevokesTheWholeSession() {
+        IssuedRefreshToken first = service.issue(USER_ID);
+        IssuedRefreshToken second = service.rotate(first.rawToken());
+
+        service.revokeToken(second.rawToken());
+
+        assertThatThrownBy(() -> service.rotate(second.rawToken()))
+                .isInstanceOf(InvalidRefreshTokenException.class);
+    }
+
+    @Test
     void expiredTokenCannotRotate() {
         RefreshTokenService shortLived = new RefreshTokenService(repository,
                 Clock.fixed(NOW.plus(Duration.ofDays(31)), ZoneOffset.UTC), Duration.ofDays(30));

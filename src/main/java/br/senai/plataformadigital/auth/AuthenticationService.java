@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,13 +16,26 @@ public class AuthenticationService {
     private final UserAccountRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService tokenService;
+    private final RefreshTokenService refreshTokenService;
     private final String dummyHash;
 
     public AuthenticationService(UserAccountRepository repository, PasswordEncoder passwordEncoder,
             JwtTokenService tokenService) {
+        this(repository, passwordEncoder, tokenService, (RefreshTokenService) null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AuthenticationService(UserAccountRepository repository, PasswordEncoder passwordEncoder,
+            JwtTokenService tokenService, ObjectProvider<RefreshTokenService> refreshTokens) {
+        this(repository, passwordEncoder, tokenService, refreshTokens.getIfAvailable());
+    }
+
+    private AuthenticationService(UserAccountRepository repository, PasswordEncoder passwordEncoder,
+            JwtTokenService tokenService, RefreshTokenService refreshTokenService) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
+        this.refreshTokenService = refreshTokenService;
         this.dummyHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
@@ -32,6 +46,11 @@ public class AuthenticationService {
         if (user.isEmpty() || !user.get().active() || !matches) {
             throw new InvalidCredentialsException();
         }
-        return tokenService.issue(user.get());
+        LoginResponse access = tokenService.issue(user.get());
+        if (refreshTokenService == null) {
+            return access;
+        }
+        IssuedRefreshToken refresh = refreshTokenService.issue(user.get().id());
+        return new LoginResponse(access.accessToken(), access.tokenType(), access.expiresIn(), refresh.rawToken());
     }
 }
