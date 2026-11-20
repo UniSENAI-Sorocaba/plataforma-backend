@@ -53,6 +53,15 @@
     "publicAccess": true
   },
   {
+    "method": "GET",
+    "path": "/api/v1/projects/managed",
+    "publicAccess": false,
+    "action": "LIST_MANAGED_PROJECTS",
+    "resource": "project",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
     "method": "POST",
     "path": "/api/v1/projects/{id}/enrollment-periods",
     "publicAccess": false,

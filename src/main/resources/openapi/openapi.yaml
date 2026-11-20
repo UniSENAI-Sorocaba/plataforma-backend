@@ -76,6 +76,20 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Project' }
+  /api/v1/projects/managed:
+    get:
+      operationId: listManagedProjects
+      summary: Lista projetos sob responsabilidade do docente autenticado
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Projetos gerenciados pelo responsável
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Project' }
+        '409': { $ref: '#/components/responses/ConflictError' }
   /api/v1/projects/{id}/enrollment-periods:
     post:
       operationId: createEnrollmentPeriod
@@ -195,7 +209,7 @@ paths:
               type: object
               required: [status]
               properties:
-                status: { type: string, enum: [APPROVED, DENIED] }
+                status: { type: string, enum: [APPROVED, REJECTED] }
       responses:
         '200':
           description: Solicitação decidida
