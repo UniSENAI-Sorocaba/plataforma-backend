@@ -17,5 +17,5 @@ public record ProjectRequest(
         String semester,
         @NotBlank @Size(max = 120) String course,
         @NotNull UUID leaderId,
-        UUID advisorId) {
+        @NotNull UUID advisorId) {
 }
