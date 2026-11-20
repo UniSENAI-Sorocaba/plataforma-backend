@@ -31,7 +31,7 @@ class SessionPersistenceConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "spring.datasource.url")
+    @ConditionalOnBean(DataSource.class)
     UserAccountRepository userAccountRepository(DataSource dataSource) {
         return new JdbcUserAccountRepository(dataSource);
     }
@@ -51,13 +51,13 @@ class SessionPersistenceConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(PasswordRecoveryTokenRepository.class)
+    @ConditionalOnMissingBean(value = {PasswordRecoveryTokenRepository.class, DataSource.class})
     PasswordRecoveryTokenRepository passwordRecoveryTokenRepository() {
         return new InMemoryPasswordRecoveryTokenRepository();
     }
 
     @Bean
-    @ConditionalOnProperty(name = "spring.datasource.url")
+    @ConditionalOnBean(DataSource.class)
     @ConditionalOnMissingBean(PasswordRecoveryTokenRepository.class)
     PasswordRecoveryTokenRepository jdbcPasswordRecoveryTokenRepository(DataSource dataSource) {
         return new JdbcPasswordRecoveryTokenRepository(dataSource);
