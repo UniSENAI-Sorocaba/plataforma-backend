@@ -23,7 +23,7 @@ public class ProjectAuthorizationPolicy implements AuthorizationPolicyContributi
                     "MANAGE_PROJECT", "DECIDE_PARTICIPATION", "REMOVE_PARTICIPANT",
                     "CREATE_ENROLLMENT_PERIOD", "CHANGE_PROJECT_LIFECYCLE", "WITHDRAW_PARTICIPATION" -> true;
             case "LIST_PROJECT_PERIODS", "LIST_PROJECT_PARTICIPATION", "LIST_PROJECT_PARTICIPANTS",
-                    "LIST_OWN_PARTICIPATION" -> true;
+                    "LIST_OWN_PARTICIPATION", "LIST_MANAGED_PROJECTS" -> true;
             default -> false;
         };
     }
@@ -43,6 +43,7 @@ public class ProjectAuthorizationPolicy implements AuthorizationPolicyContributi
             case "LIST_PROJECT_PERIODS", "LIST_PROJECT_PARTICIPATION", "LIST_PROJECT_PARTICIPANTS" ->
                     responsible(request.scope().orElseThrow(), user);
             case "LIST_OWN_PARTICIPATION" -> activeStudent(user);
+            case "LIST_MANAGED_PROJECTS" -> hasManagedProject(user);
             default -> false;
         };
     }
@@ -89,5 +90,11 @@ public class ProjectAuthorizationPolicy implements AuthorizationPolicyContributi
                 SELECT EXISTS (SELECT 1 FROM academic_pi.participation_request
                     WHERE id = ?::uuid AND student_id = ?)
                 """, Boolean.class, requestId, user));
+    }
+
+    private boolean hasManagedProject(UUID user) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS (SELECT 1 FROM academic_pi.project_responsible WHERE user_id = ?)
+                """, Boolean.class, user));
     }
 }

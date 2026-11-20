@@ -81,6 +81,17 @@ public class ProjectRepository {
                 """, (rs, row) -> map(rs, rs.getObject("id", UUID.class)));
     }
 
+    public List<ProjectResponse> findManaged(UUID userId) {
+        return jdbc.query("""
+                SELECT p.id, p.title, p.summary, p.description, p.classification, p.continuity, p.end_date,
+                       p.publication_status, p.lifecycle_status, p.created_at, p.updated_at
+                FROM academic_pi.project p
+                JOIN academic_pi.project_responsible r ON r.project_id = p.id
+                WHERE r.user_id = ?
+                ORDER BY p.updated_at DESC, p.id
+                """, (rs, row) -> map(rs, rs.getObject("id", UUID.class)), userId);
+    }
+
     public List<UUID> responsibleIds(UUID projectId) {
         return jdbc.query("SELECT user_id FROM academic_pi.project_responsible WHERE project_id = ? ORDER BY user_id",
                 (rs, row) -> rs.getObject("user_id", UUID.class), projectId);

@@ -49,6 +49,11 @@ public class ProjectService {
         return repository.findPublic();
     }
 
+    public List<ProjectResponse> managedProjects(UUID actor) {
+        requireTeacher(actor);
+        return repository.findManaged(actor);
+    }
+
     public List<EnrollmentPeriodResponse> periods(UUID projectId, UUID actor) {
         requireResponsible(projectId, actor);
         return repository.findPeriods(projectId);

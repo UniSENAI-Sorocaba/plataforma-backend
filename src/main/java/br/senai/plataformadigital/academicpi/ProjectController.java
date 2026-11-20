@@ -44,6 +44,11 @@ public class ProjectController {
         return service.publicProjects();
     }
 
+    @GetMapping("/projects/managed")
+    List<ProjectResponse> managedProjects() {
+        return service.managedProjects(actor());
+    }
+
     @PostMapping("/projects/{id}/enrollment-periods")
     ResponseEntity<EnrollmentPeriodResponse> createPeriod(@PathVariable UUID id,
                                                            @Valid @RequestBody EnrollmentPeriodRequest request) {
