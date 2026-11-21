@@ -63,6 +63,33 @@
     "publicAccess": true
   },
   {
+    "method": "POST",
+    "path": "/api/v1/projects/{projectId}/impacts",
+    "publicAccess": false,
+    "action": "CREATE_IMPACT",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/impacts/{id}/submit",
+    "publicAccess": false,
+    "action": "SUBMIT_IMPACT",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/impacts/{id}/approve",
+    "publicAccess": false,
+    "action": "APPROVE_IMPACT",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
     "method": "GET",
     "path": "/api/v1/projects/managed",
     "publicAccess": false,
