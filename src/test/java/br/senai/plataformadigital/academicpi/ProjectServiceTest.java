@@ -69,8 +69,10 @@ class ProjectServiceTest {
 
     @Test
     void rejectsDeadlineAdjustmentThatIsNotFuture() {
+        UUID actor = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        when(repository.hasRole(actor, "COORDENACAO")).thenReturn(true);
         assertThatThrownBy(() -> service.updatePeriod(UUID.randomUUID(), UUID.randomUUID(),
-                new EnrollmentPeriodUpdateRequest(Instant.parse("2026-11-21T12:00:00Z")), UUID.randomUUID()))
+                new EnrollmentPeriodUpdateRequest(Instant.parse("2026-11-21T12:00:00Z")), actor))
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("futuro");
     }
