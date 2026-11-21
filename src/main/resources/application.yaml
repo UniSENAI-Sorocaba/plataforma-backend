@@ -13,3 +13,8 @@ management:
     health:
       probes:
         enabled: true
+security:
+  password-recovery:
+    delivery: ${SECURITY_PASSWORD_RECOVERY_DELIVERY:disabled}
+    from: ${SECURITY_PASSWORD_RECOVERY_FROM:no-reply@plataforma.local}
+    reset-base-url: ${SECURITY_PASSWORD_RECOVERY_RESET_BASE_URL:http://localhost:3000/login}

@@ -19,6 +19,9 @@ import br.senai.plataformadigital.auth.passwordrecovery.JdbcPasswordRecoveryToke
 import br.senai.plataformadigital.auth.passwordrecovery.PasswordRecoveryTokenPolicy;
 import br.senai.plataformadigital.auth.passwordrecovery.PasswordRecoveryTokenRepository;
 import br.senai.plataformadigital.auth.passwordrecovery.PasswordRecoveryTokenService;
+import br.senai.plataformadigital.auth.passwordrecovery.PasswordRecoveryAccountLookup;
+import br.senai.plataformadigital.auth.passwordrecovery.PasswordRecoveryRequestService;
+import br.senai.plataformadigital.auth.passwordrecovery.PasswordRecoveryTokenDelivery;
 
 /** Activates the DB-005 adapter only when JWT mode and a datasource are configured. */
 @Configuration
@@ -70,5 +73,21 @@ class SessionPersistenceConfiguration {
             Clock clock,
             @Value("${security.password-recovery.lifetime:30m}") Duration lifetime) {
         return new PasswordRecoveryTokenService(repository, clock, PasswordRecoveryTokenPolicy.withLifetime(lifetime));
+    }
+
+    @Bean
+    @ConditionalOnBean(UserAccountRepository.class)
+    PasswordRecoveryAccountLookup passwordRecoveryAccountLookup(UserAccountRepository accounts) {
+        return subject -> accounts.findByEmail(subject).filter(AuthenticatedUser::active).isPresent();
+    }
+
+    @Bean
+    @ConditionalOnBean({PasswordRecoveryAccountLookup.class, PasswordRecoveryTokenService.class,
+            PasswordRecoveryTokenDelivery.class})
+    PasswordRecoveryRequestService passwordRecoveryRequestService(
+            PasswordRecoveryAccountLookup accountLookup,
+            PasswordRecoveryTokenService tokenService,
+            PasswordRecoveryTokenDelivery tokenDelivery) {
+        return new PasswordRecoveryRequestService(accountLookup, tokenService, tokenDelivery);
     }
 }
