@@ -93,6 +93,20 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/PublicProjectPage' }
         '400': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/public/impacts:
+    get:
+      operationId: listPublicImpacts
+      summary: Lista impactos aprovados publicados
+      parameters:
+        - { name: projectId, in: query, required: false, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Impactos aprovados
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Impact' }
   /api/v1/projects/managed:
     get:
       operationId: listManagedProjects
@@ -107,6 +121,42 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/Project' }
         '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/projects/{projectId}/impacts:
+    post:
+      operationId: createImpact
+      summary: Cria rascunho de impacto do projeto
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ImpactRequest' }
+      responses:
+        '201':
+          description: Impacto criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Impact' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/impacts/{id}/submit:
+    patch:
+      operationId: submitImpact
+      summary: Envia impacto para revisão
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Impacto enviado, content: { application/json: { schema: { $ref: '#/components/schemas/Impact' } } } } }
+  /api/v1/impacts/{id}/approve:
+    patch:
+      operationId: approveImpact
+      summary: Aprova impacto para publicação
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Impacto aprovado, content: { application/json: { schema: { $ref: '#/components/schemas/Impact' } } } } }
   /api/v1/projects/{id}/enrollment-periods:
     post:
       operationId: createEnrollmentPeriod
@@ -702,6 +752,25 @@ components:
         courseCode: { type: string, nullable: true }
         semesters: { type: array, items: { type: string } }
         odsCodes: { type: array, items: { type: string } }
+        updatedAt: { type: string, format: date-time }
+    ImpactRequest:
+      type: object
+      required: [title, summary]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 200 }
+        summary: { type: string, minLength: 10, maxLength: 1000 }
+        evidenceUrl: { type: string, maxLength: 1000, nullable: true }
+    Impact:
+      type: object
+      required: [id, projectId, title, status, version, summary, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        projectId: { type: string, format: uuid }
+        title: { type: string }
+        status: { type: string, enum: [DRAFT, SUBMITTED, APPROVED, RETIRED] }
+        version: { type: integer, minimum: 1 }
+        summary: { type: string }
+        evidenceUrl: { type: string, nullable: true }
         updatedAt: { type: string, format: date-time }
     EnrollmentPeriodRequest:
       type: object
