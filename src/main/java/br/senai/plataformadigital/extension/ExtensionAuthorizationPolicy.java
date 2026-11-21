@@ -19,7 +19,8 @@ public class ExtensionAuthorizationPolicy implements AuthorizationPolicyContribu
     public boolean supports(String action) {
         return switch (action) {
             case "CREATE_EXTENSION_OPPORTUNITY", "PUBLISH_EXTENSION_OPPORTUNITY", "CLOSE_EXTENSION_OPPORTUNITY",
-                    "LIST_EXTENSION_APPLICATIONS", "LIST_EXTENSION_ACTIVITIES", "DECIDE_EXTENSION_ACTIVITY" -> true;
+                    "LIST_EXTENSION_APPLICATIONS", "LIST_EXTENSION_ACTIVITIES", "DECIDE_EXTENSION_ACTIVITY",
+                    "ISSUE_CERTIFICATE", "REVOKE_CERTIFICATE" -> true;
             case "APPLY_EXTENSION_OPPORTUNITY", "LIST_OWN_EXTENSION_APPLICATIONS", "WITHDRAW_EXTENSION_APPLICATION",
                     "SUBMIT_EXTENSION_ACTIVITY", "LIST_OWN_EXTENSION_ACTIVITIES", "READ_OWN_EXTENSION_HOURS",
                     "CORRECT_EXTENSION_ACTIVITY" -> true;
@@ -38,6 +39,7 @@ public class ExtensionAuthorizationPolicy implements AuthorizationPolicyContribu
             case "DECIDE_EXTENSION_ACTIVITY" -> responsibleActivity(request.scope().orElseThrow(), user);
             case "WITHDRAW_EXTENSION_APPLICATION" -> activeStudent(user) && ownsApplication(request.scope().orElseThrow(), user);
             case "LIST_EXTENSION_APPLICATIONS", "LIST_EXTENSION_ACTIVITIES" -> coordinator(user) || responsible(request.scope().orElseThrow(), user);
+            case "ISSUE_CERTIFICATE", "REVOKE_CERTIFICATE" -> coordinator(user);
             default -> false;
         };
     }
