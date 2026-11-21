@@ -69,7 +69,7 @@ public class ActivityRepository {
         return jdbc.query("""
                 SELECT id, project_id, period_id, student_id, title, description, requested_hours,
                        approved_hours, status, rejection_reason, submitted_at, reviewed_at, reviewed_by, updated_at
-                FROM extension.activity """ + where + " ORDER BY submitted_at, id", ActivityRepository::map, args);
+                FROM extension.activity""" + " " + where + " ORDER BY submitted_at, id", ActivityRepository::map, args);
     }
 
     public int updateSubmission(UUID id, UUID studentId, ActivityRequest request) {
