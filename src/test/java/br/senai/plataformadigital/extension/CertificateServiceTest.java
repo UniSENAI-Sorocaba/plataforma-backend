@@ -7,6 +7,9 @@ import static org.mockito.Mockito.when;
 import br.senai.plataformadigital.exception.ConflictException;
 import br.senai.plataformadigital.exception.ResourceNotFoundException;
 import java.time.Instant;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -43,5 +46,20 @@ class CertificateServiceTest {
         assertThatThrownBy(() -> service.revoke("missing", "motivo")).isInstanceOf(ConflictException.class);
         when(repository.find(anyString())).thenThrow(new org.springframework.dao.EmptyResultDataAccessException(1));
         assertThatThrownBy(() -> service.validate("missing")).isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void detectsTamperedCertificateContentHash() throws Exception {
+        var repository = Mockito.mock(CertificateRepository.class);
+        var service = new CertificateService(repository);
+        UUID project = UUID.randomUUID(), period = UUID.randomUUID(), student = UUID.randomUUID();
+        String code = "ABC123";
+        String canonical = project+"|"+period+"|"+student+"|"+code;
+        String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                .digest(canonical.getBytes(StandardCharsets.UTF_8)));
+        var intact = new CertificateResponse(UUID.randomUUID(), code, project, period, student, hash, "ACTIVE", Instant.now(), null, "/public/certificates/"+code);
+        var tampered = new CertificateResponse(intact.id(), code, project, period, student, "0".repeat(64), "ACTIVE", intact.issuedAt(), null, intact.validationUrl());
+        org.assertj.core.api.Assertions.assertThat(service.isContentIntact(intact)).isTrue();
+        org.assertj.core.api.Assertions.assertThat(service.isContentIntact(tampered)).isFalse();
     }
 }

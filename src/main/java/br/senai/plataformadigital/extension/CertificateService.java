@@ -26,6 +26,11 @@ public class CertificateService {
         catch (DataIntegrityViolationException ex) { throw new ConflictException("Já existe certificado para este participante."); }
     }
     public CertificateResponse validate(String code) { try { return repository.find(code); } catch (EmptyResultDataAccessException ex) { throw new ResourceNotFoundException("Certificado não encontrado."); } }
+    public boolean isContentIntact(CertificateResponse certificate) {
+        String canonical = certificate.projectId()+"|"+certificate.periodId()+"|"+certificate.studentId()+"|"+certificate.publicCode();
+        return MessageDigest.isEqual(HexFormat.of().formatHex(hash(canonical)).getBytes(StandardCharsets.UTF_8),
+                certificate.contentHash().getBytes(StandardCharsets.UTF_8));
+    }
     @Transactional public CertificateResponse revoke(String code, String reason) { if (repository.revoke(code, reason) != 1) throw new ConflictException("Certificado inexistente, já revogado ou motivo inválido."); return validate(code); }
     private byte[] hash(String value) { try { return MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)); } catch (Exception ex) { throw new IllegalStateException("SHA-256 indisponível", ex); } }
 }
