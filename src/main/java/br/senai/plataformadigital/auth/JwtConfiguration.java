@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -56,6 +57,8 @@ public class JwtConfiguration {
                                 "/api/v1/deliverables/*/content",
                                 "/api/v1/deliverables/*/download",
                                 "/actuator/health")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/public/projects", "/api/v1/extension/opportunities", "/api/v1/extension/opportunities/*")
                         .permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.decoder(decoder)))
