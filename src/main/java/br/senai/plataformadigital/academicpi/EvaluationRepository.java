@@ -2,6 +2,7 @@ package br.senai.plataformadigital.academicpi;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -57,7 +58,7 @@ public class EvaluationRepository {
                 INSERT INTO academic_pi.evaluation
                     (id, project_id, period_id, evaluated_student_id, evaluation_date, created_by)
                 VALUES (?, ?, ?, ?, ?, ?)
-                """, id, projectId, periodId, request.evaluatedStudentId(), request.evaluationDate(), actor);
+                """, id, projectId, periodId, request.evaluatedStudentId(), Timestamp.from(request.evaluationDate()), actor);
         return id;
     }
 
