@@ -118,6 +118,15 @@
   },
   {
     "method": "PATCH",
+    "path": "/api/v1/projects/{id}/enrollment-periods/{periodId}",
+    "publicAccess": false,
+    "action": "UPDATE_ENROLLMENT_PERIOD",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "PATCH",
     "path": "/api/v1/projects/{id}/publication",
     "publicAccess": false,
     "action": "MANAGE_PROJECT",

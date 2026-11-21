@@ -51,6 +51,28 @@ paths:
               schema: { $ref: '#/components/schemas/Project' }
         '400': { $ref: '#/components/responses/ValidationError' }
         '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/projects/{id}/enrollment-periods/{periodId}:
+    patch:
+      operationId: updateEnrollmentPeriodDeadline
+      summary: Ajusta ou reabre o fim de um período sem retroatividade
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/ProjectId' }
+        - { name: periodId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EnrollmentPeriodUpdateRequest' }
+      responses:
+        '200':
+          description: Período atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnrollmentPeriod' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+        '409': { $ref: '#/components/responses/ConflictError' }
   /api/v1/projects/{id}:
     get:
       operationId: getProject
@@ -778,6 +800,11 @@ components:
       properties:
         academicTerm: { type: string, minLength: 1, maxLength: 20 }
         startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+    EnrollmentPeriodUpdateRequest:
+      type: object
+      required: [endsAt]
+      properties:
         endsAt: { type: string, format: date-time }
     EnrollmentPeriod:
       allOf:
