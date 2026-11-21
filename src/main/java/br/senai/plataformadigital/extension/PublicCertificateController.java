@@ -16,6 +16,6 @@ public class PublicCertificateController {
     @GetMapping("/{code}")
     Map<String, Object> validate(@PathVariable String code) {
         CertificateResponse certificate = service.validate(code);
-        return Map.of("valid", "ACTIVE".equals(certificate.status()), "certificate", certificate);
+        return Map.of("valid", "ACTIVE".equals(certificate.status()) && service.isContentIntact(certificate), "certificate", certificate);
     }
 }
