@@ -473,6 +473,94 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ExtensionApplication' }
         '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/extension/projects/{projectId}/periods/{periodId}/activities:
+    post:
+      operationId: submitExtensionActivity
+      summary: Envia uma atividade de extensão
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: periodId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/ExtensionActivityRequest' } }
+      responses:
+        '201':
+          description: Atividade enviada
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/ExtensionActivity' } }
+        '409': { $ref: '#/components/responses/ConflictError' }
+    get:
+      operationId: listExtensionActivities
+      summary: Lista atividades do projeto para o docente responsável
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: periodId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Atividades do período
+          content:
+            application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ExtensionActivity' } } }
+  /api/v1/extension/projects/{projectId}/periods/{periodId}/activities/mine:
+    get:
+      operationId: listOwnExtensionActivities
+      summary: Lista atividades do aluno autenticado
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: periodId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Atividades próprias
+          content:
+            application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ExtensionActivity' } } }
+  /api/v1/extension/projects/{projectId}/periods/{periodId}/hours/mine:
+    get:
+      operationId: getOwnExtensionHours
+      summary: Consulta o total aprovado do aluno autenticado
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: periodId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Total de horas aprovadas
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/ExtensionHoursTotal' } }
+  /api/v1/extension/activities/{id}:
+    put:
+      operationId: correctExtensionActivity
+      summary: Corrige atividade submetida ou recusada antes do prazo
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/ExtensionActivityRequest' } }
+      responses:
+        '200':
+          description: Atividade reenviada
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/ExtensionActivity' } }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/extension/activities/{id}/decision:
+    patch:
+      operationId: decideExtensionActivity
+      summary: Aprova ou recusa atividade como docente responsável
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/ExtensionActivityDecisionRequest' } }
+      responses:
+        '200':
+          description: Decisão registrada
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/ExtensionActivity' } }
+        '409': { $ref: '#/components/responses/ConflictError' }
 components:
   securitySchemes:
     bearerAuth:
@@ -626,6 +714,45 @@ components:
         status: { type: string, enum: [SUBMITTED, WITHDRAWN] }
         submittedAt: { type: string, format: date-time }
         withdrawnAt: { type: string, format: date-time, nullable: true }
+    ExtensionActivityRequest:
+      type: object
+      required: [title, description, requestedHours]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 200 }
+        description: { type: string, minLength: 10, maxLength: 5000 }
+        requestedHours: { type: number, minimum: 0.25, maximum: 100, multipleOf: 0.25 }
+    ExtensionActivityDecisionRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [APPROVED, REJECTED] }
+        approvedHours: { type: number, minimum: 0.25, maximum: 100, multipleOf: 0.25, nullable: true }
+        rejectionReason: { type: string, minLength: 3, maxLength: 1000, nullable: true }
+    ExtensionActivity:
+      allOf:
+        - $ref: '#/components/schemas/ExtensionActivityRequest'
+        - type: object
+          required: [id, projectId, periodId, studentId, status, submittedAt, updatedAt]
+          properties:
+            id: { type: string, format: uuid }
+            projectId: { type: string, format: uuid }
+            periodId: { type: string, format: uuid }
+            studentId: { type: string, format: uuid }
+            approvedHours: { type: number, nullable: true }
+            status: { type: string, enum: [SUBMITTED, APPROVED, REJECTED] }
+            rejectionReason: { type: string, nullable: true }
+            submittedAt: { type: string, format: date-time }
+            reviewedAt: { type: string, format: date-time, nullable: true }
+            reviewedBy: { type: string, format: uuid, nullable: true }
+            updatedAt: { type: string, format: date-time }
+    ExtensionHoursTotal:
+      type: object
+      required: [projectId, periodId, studentId, approvedHours]
+      properties:
+        projectId: { type: string, format: uuid }
+        periodId: { type: string, format: uuid }
+        studentId: { type: string, format: uuid }
+        approvedHours: { type: number }
     ApiError:
       type: object
       required: [timestamp, status, code, message, path, correlationId, details]

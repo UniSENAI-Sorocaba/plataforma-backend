@@ -19,8 +19,10 @@ public class ExtensionAuthorizationPolicy implements AuthorizationPolicyContribu
     public boolean supports(String action) {
         return switch (action) {
             case "CREATE_EXTENSION_OPPORTUNITY", "PUBLISH_EXTENSION_OPPORTUNITY", "CLOSE_EXTENSION_OPPORTUNITY",
-                    "LIST_EXTENSION_APPLICATIONS" -> true;
-            case "APPLY_EXTENSION_OPPORTUNITY", "LIST_OWN_EXTENSION_APPLICATIONS", "WITHDRAW_EXTENSION_APPLICATION" -> true;
+                    "LIST_EXTENSION_APPLICATIONS", "LIST_EXTENSION_ACTIVITIES", "DECIDE_EXTENSION_ACTIVITY" -> true;
+            case "APPLY_EXTENSION_OPPORTUNITY", "LIST_OWN_EXTENSION_APPLICATIONS", "WITHDRAW_EXTENSION_APPLICATION",
+                    "SUBMIT_EXTENSION_ACTIVITY", "LIST_OWN_EXTENSION_ACTIVITIES", "READ_OWN_EXTENSION_HOURS",
+                    "CORRECT_EXTENSION_ACTIVITY" -> true;
             default -> false;
         };
     }
@@ -31,8 +33,11 @@ public class ExtensionAuthorizationPolicy implements AuthorizationPolicyContribu
         return switch (request.action()) {
             case "CREATE_EXTENSION_OPPORTUNITY", "PUBLISH_EXTENSION_OPPORTUNITY", "CLOSE_EXTENSION_OPPORTUNITY" -> hasRole(user, "COORDENACAO");
             case "APPLY_EXTENSION_OPPORTUNITY", "LIST_OWN_EXTENSION_APPLICATIONS" -> activeStudent(user);
+            case "SUBMIT_EXTENSION_ACTIVITY", "LIST_OWN_EXTENSION_ACTIVITIES", "READ_OWN_EXTENSION_HOURS" -> activeStudent(user);
+            case "CORRECT_EXTENSION_ACTIVITY" -> activeStudent(user) && ownsActivity(request.scope().orElseThrow(), user);
+            case "DECIDE_EXTENSION_ACTIVITY" -> responsibleActivity(request.scope().orElseThrow(), user);
             case "WITHDRAW_EXTENSION_APPLICATION" -> activeStudent(user) && ownsApplication(request.scope().orElseThrow(), user);
-            case "LIST_EXTENSION_APPLICATIONS" -> coordinator(user) || responsible(request.scope().orElseThrow(), user);
+            case "LIST_EXTENSION_APPLICATIONS", "LIST_EXTENSION_ACTIVITIES" -> coordinator(user) || responsible(request.scope().orElseThrow(), user);
             default -> false;
         };
     }
@@ -67,5 +72,19 @@ public class ExtensionAuthorizationPolicy implements AuthorizationPolicyContribu
                     JOIN academic_pi.project_responsible r ON r.project_id = o.project_id
                     WHERE o.id = ?::uuid AND r.user_id = ?)
                 """, Boolean.class, opportunityId, user));
+    }
+
+    private boolean ownsActivity(String activityId, UUID user) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS (SELECT 1 FROM extension.activity WHERE id = ?::uuid AND student_id = ?)
+                """, Boolean.class, activityId, user));
+    }
+
+    private boolean responsibleActivity(String activityId, UUID user) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS (SELECT 1 FROM extension.activity a
+                    JOIN academic_pi.project_responsible r ON r.project_id = a.project_id
+                    WHERE a.id = ?::uuid AND r.user_id = ?)
+                """, Boolean.class, activityId, user));
     }
 }
