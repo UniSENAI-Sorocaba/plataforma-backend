@@ -22,7 +22,8 @@ public class ProjectAuthorizationPolicy implements AuthorizationPolicyContributi
             case "CREATE_PROJECT", "READ_PROJECT", "REQUEST_PARTICIPATION",
                     "MANAGE_PROJECT", "DECIDE_PARTICIPATION", "REMOVE_PARTICIPANT",
                     "CREATE_ENROLLMENT_PERIOD", "CHANGE_PROJECT_LIFECYCLE", "WITHDRAW_PARTICIPATION",
-                    "CREATE_DELIVERABLE", "CREATE_EVALUATION", "LIST_EVALUATIONS" -> true;
+                    "CREATE_DELIVERABLE", "CREATE_EVALUATION", "LIST_EVALUATIONS", "GRADE_EVALUATION",
+                    "CREATE_RUBRIC", "READ_RUBRIC" -> true;
             case "LIST_PROJECT_PERIODS", "LIST_PROJECT_PARTICIPATION", "LIST_PROJECT_PARTICIPANTS",
                     "LIST_OWN_PARTICIPATION", "LIST_MANAGED_PROJECTS" -> true;
             default -> false;
@@ -44,6 +45,9 @@ public class ProjectAuthorizationPolicy implements AuthorizationPolicyContributi
             case "CREATE_DELIVERABLE" -> activeStudent(user) && activeParticipant(request.scope().orElseThrow(), user);
             case "CREATE_EVALUATION" -> hasRole(user, "COORDENACAO");
             case "LIST_EVALUATIONS" -> hasRole(user, "COORDENACAO") || responsible(request.scope().orElseThrow(), user);
+            case "GRADE_EVALUATION" -> activeUser(user);
+            case "CREATE_RUBRIC" -> hasRole(user, "COORDENACAO");
+            case "READ_RUBRIC" -> activeUser(user);
             case "LIST_PROJECT_PERIODS", "LIST_PROJECT_PARTICIPATION", "LIST_PROJECT_PARTICIPANTS" ->
                     responsible(request.scope().orElseThrow(), user);
             case "LIST_OWN_PARTICIPATION" -> activeStudent(user);

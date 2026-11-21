@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
+import java.math.BigDecimal;
 
 import br.senai.plataformadigital.exception.ConflictException;
 import java.time.Instant;
@@ -83,6 +85,27 @@ class EvaluationServiceTest {
         when(repository.isActiveTarget(PROJECT, PERIOD, TARGET)).thenReturn(true);
         assertThatThrownBy(() -> service.create(PROJECT, PERIOD, request, COORDINATOR))
                 .isInstanceOf(ConflictException.class).hasMessageContaining("próprio");
+    }
+
+    @Test
+    void gradesEvaluationOnlyForAssignedEvaluator() {
+        UUID rubricVersion = UUID.randomUUID();
+        var criterion = new RubricCriterionResponse(UUID.randomUUID(), "technical", "Técnica", BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.TEN);
+        when(repository.isAssignedEvaluator(EVALUATION, EVALUATOR)).thenReturn(true);
+        when(repository.belongsTo(EVALUATION, PROJECT, PERIOD)).thenReturn(true);
+        when(repository.findRubric(rubricVersion)).thenReturn(new RubricVersionResponse(rubricVersion, UUID.randomUUID(), "PI", "PI", 1, List.of(criterion)));
+        var response = service.grade(PROJECT, PERIOD, EVALUATION,
+                new EvaluationGradeRequest(rubricVersion, List.of(new EvaluationCriterionScoreRequest("technical", new BigDecimal("8.50")))), EVALUATOR);
+        assertThat(response.finalScore()).isEqualByComparingTo("8.50");
+        verify(repository).saveGrade(eq(EVALUATION), eq(rubricVersion), any(), any(), eq(new BigDecimal("8.50")));
+    }
+
+    @Test
+    void rejectsGradeFromUnassignedEvaluator() {
+        when(repository.isAssignedEvaluator(EVALUATION, EVALUATOR)).thenReturn(false);
+        assertThatThrownBy(() -> service.grade(PROJECT, PERIOD, EVALUATION,
+                new EvaluationGradeRequest(UUID.randomUUID(), List.of(new EvaluationCriterionScoreRequest("technical", BigDecimal.ONE))), EVALUATOR))
+                .isInstanceOf(ConflictException.class).hasMessageContaining("atribuído");
     }
 
     private static EvaluationRequest request(List<UUID> evaluators) {

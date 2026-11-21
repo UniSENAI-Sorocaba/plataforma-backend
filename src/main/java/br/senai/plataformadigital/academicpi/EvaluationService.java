@@ -50,6 +50,21 @@ public class EvaluationService {
         return repository.findAll(projectId, periodId);
     }
 
+    @Transactional
+    public EvaluationGradeResponse grade(UUID projectId, UUID periodId, UUID evaluationId,
+                                          EvaluationGradeRequest request, UUID actor) {
+        if (!repository.isAssignedEvaluator(evaluationId, actor)) {
+            throw new ConflictException("O usuário não está atribuído a esta avaliação.");
+        }
+        var rubric = repository.findRubric(request.rubricVersionId());
+        var score = RubricService.calculate(rubric.criteria(), request.scores());
+        if (!repository.belongsTo(evaluationId, projectId, periodId)) {
+            throw new ConflictException("Avaliação fora do projeto ou período informado.");
+        }
+        repository.saveGrade(evaluationId, request.rubricVersionId(), request.scores(), rubric.criteria(), score);
+        return new EvaluationGradeResponse(evaluationId, request.rubricVersionId(), score);
+    }
+
     private void requireCoordinator(UUID actor) {
         if (!repository.isCoordinator(actor)) throw new ConflictException("A atribuição de avaliadores exige coordenação.");
     }

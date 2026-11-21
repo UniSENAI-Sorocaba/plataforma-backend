@@ -37,6 +37,12 @@ public class EvaluationController {
         return service.list(projectId, periodId, actor());
     }
 
+    @PostMapping("/{evaluationId}/grade")
+    EvaluationGradeResponse grade(@PathVariable UUID projectId, @PathVariable UUID periodId,
+                                   @PathVariable UUID evaluationId, @Valid @RequestBody EvaluationGradeRequest request) {
+        return service.grade(projectId, periodId, evaluationId, request, actor());
+    }
+
     private UUID actor() {
         return subjects.currentSubject().map(subject -> UUID.fromString(subject.id()))
                 .orElseThrow(() -> new IllegalStateException("Identidade autenticada ausente."));
