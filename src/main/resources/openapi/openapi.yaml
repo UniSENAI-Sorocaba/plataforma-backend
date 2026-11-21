@@ -318,6 +318,48 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Deliverable' }
         '409': { $ref: '#/components/responses/ConflictError' }
+  /api/v1/projects/{projectId}/periods/{periodId}/evaluations:
+    post:
+      operationId: createEvaluation
+      summary: Atribui uma avaliação e seus avaliadores autorizados
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/ProjectId' }
+        - name: periodId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EvaluationRequest' }
+      responses:
+        '201':
+          description: Avaliação atribuída
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Evaluation' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+    get:
+      operationId: listEvaluations
+      summary: Lista avaliações autorizadas do projeto e período
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/ProjectId' }
+        - name: periodId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Avaliações atribuídas
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Evaluation' }
+        '409': { $ref: '#/components/responses/ConflictError' }
   /api/v1/deliverables/{id}/content:
     put:
       operationId: uploadDeliverableContent
@@ -659,6 +701,28 @@ components:
         joinedAt: { type: string, format: date-time }
         removedAt: { type: string, format: date-time, nullable: true }
         removalReason: { type: string, nullable: true }
+    EvaluationRequest:
+      type: object
+      required: [evaluatedStudentId, evaluationDate, evaluatorIds]
+      properties:
+        evaluatedStudentId: { type: string, format: uuid }
+        evaluationDate: { type: string, format: date-time }
+        evaluatorIds:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
+    Evaluation:
+      allOf:
+        - $ref: '#/components/schemas/EvaluationRequest'
+        - type: object
+          required: [id, projectId, periodId, createdBy, createdAt, updatedAt]
+          properties:
+            id: { type: string, format: uuid }
+            projectId: { type: string, format: uuid }
+            periodId: { type: string, format: uuid }
+            createdBy: { type: string, format: uuid }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
     DeliverableInitiationRequest:
       type: object
       required: [fileName, contentType, sizeBytes]
