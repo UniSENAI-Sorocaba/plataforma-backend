@@ -58,7 +58,7 @@ public class JwtConfiguration {
                                 "/api/v1/deliverables/*/download",
                                 "/actuator/health")
                         .permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/public/projects", "/api/v1/public/projects/search", "/api/v1/extension/opportunities", "/api/v1/extension/opportunities/*")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/public/projects", "/api/v1/public/projects/search", "/api/v1/public/impacts", "/api/v1/extension/opportunities", "/api/v1/extension/opportunities/*")
                         .permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.decoder(decoder)))
