@@ -54,6 +54,11 @@
   },
   {
     "method": "GET",
+    "path": "/api/v1/public/projects/search",
+    "publicAccess": true
+  },
+  {
+    "method": "GET",
     "path": "/api/v1/projects/managed",
     "publicAccess": false,
     "action": "LIST_MANAGED_PROJECTS",

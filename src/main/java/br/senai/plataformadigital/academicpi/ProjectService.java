@@ -49,6 +49,11 @@ public class ProjectService {
         return repository.findPublic();
     }
 
+    public PublicProjectPage publicProjectSearch(String courseCode, String semester, String odsCode, int page, int pageSize) {
+        if (page < 0 || pageSize < 1 || pageSize > 100) throw new ConflictException("Paginação pública inválida.");
+        return repository.findPublicPage(courseCode, semester, odsCode, page, pageSize);
+    }
+
     public List<ProjectResponse> managedProjects(UUID actor) {
         requireTeacher(actor);
         return repository.findManaged(actor);
