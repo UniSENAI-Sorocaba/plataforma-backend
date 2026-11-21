@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.ArrayList;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -80,6 +81,32 @@ public class ProjectRepository {
                 WHERE publication_status = 'PUBLISHED' AND lifecycle_status = 'ACTIVE'
                 ORDER BY updated_at DESC, id
                 """, (rs, row) -> map(rs, rs.getObject("id", UUID.class)));
+    }
+
+    public PublicProjectPage findPublicPage(String courseCode, String semester, String odsCode, int page, int pageSize) {
+        StringBuilder where = new StringBuilder(" WHERE p.publication_status = 'PUBLISHED' AND p.lifecycle_status = 'ACTIVE'");
+        List<Object> args = new ArrayList<>();
+        if (courseCode != null && !courseCode.isBlank()) { where.append(" AND p.course_code = ?"); args.add(courseCode.trim()); }
+        if (semester != null && !semester.isBlank()) { where.append(" AND EXISTS (SELECT 1 FROM academic_pi.enrollment_period epf WHERE epf.project_id = p.id AND epf.academic_term = ?)"); args.add(semester.trim()); }
+        if (odsCode != null && !odsCode.isBlank()) { where.append(" AND ? = ANY(p.ods_codes)"); args.add(odsCode.trim()); }
+        Number total = jdbc.queryForObject("SELECT count(*) FROM academic_pi.project p" + where, Number.class, args.toArray());
+        List<Object> queryArgs = new ArrayList<>(args);
+        queryArgs.add(pageSize); queryArgs.add(page * pageSize);
+        List<PublicProjectResponse> items = jdbc.query("""
+                SELECT p.id, p.title, p.summary, p.description, p.classification, p.continuity,
+                       p.course_code, p.ods_codes, p.updated_at,
+                       COALESCE((SELECT array_agg(ep.academic_term ORDER BY ep.academic_term)
+                                 FROM academic_pi.enrollment_period ep WHERE ep.project_id = p.id), '{}') AS semesters
+                FROM academic_pi.project p
+                """ + where + " ORDER BY p.updated_at DESC, p.id LIMIT ? OFFSET ?", (rs, row) -> new PublicProjectResponse(
+                rs.getObject("id", UUID.class), rs.getString("title"), rs.getString("summary"),
+                rs.getString("description"), ProjectClassification.valueOf(rs.getString("classification")),
+                ProjectContinuity.valueOf(rs.getString("continuity")), rs.getString("course_code"),
+                List.of((String[]) rs.getArray("semesters").getArray()),
+                rs.getArray("ods_codes") == null ? List.of() : List.of((String[]) rs.getArray("ods_codes").getArray()),
+                rs.getTimestamp("updated_at").toInstant()), queryArgs.toArray());
+        int totalItems = total.intValue();
+        return new PublicProjectPage(items, page, pageSize, totalItems, totalItems == 0 ? 0 : (totalItems + pageSize - 1) / pageSize);
     }
 
     public List<ProjectResponse> findManaged(UUID userId) {
