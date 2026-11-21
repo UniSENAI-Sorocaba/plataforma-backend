@@ -22,12 +22,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 public class ExtensionController {
     private final ExtensionService service;
     private final ActivityService activityService;
+    private final CertificateService certificateService;
     private final AuthenticatedSubjectProvider subjects;
 
-    public ExtensionController(ExtensionService service, ActivityService activityService, AuthenticatedSubjectProvider subjects) {
-        this.service = service;
-        this.activityService = activityService;
-        this.subjects = subjects;
+    public ExtensionController(ExtensionService service, ActivityService activityService, CertificateService certificateService, AuthenticatedSubjectProvider subjects) {
+        this.service = service; this.activityService = activityService; this.certificateService = certificateService; this.subjects = subjects;
     }
 
     @PostMapping("/opportunities")
@@ -92,6 +91,17 @@ public class ExtensionController {
     @PatchMapping("/activities/{id}/decision")
     ActivityResponse decide(@PathVariable UUID id, @Valid @RequestBody ActivityDecisionRequest request) {
         return activityService.decide(id, request, actor());
+    }
+
+    @PostMapping("/projects/{projectId}/periods/{periodId}/certificates")
+    ResponseEntity<CertificateResponse> issueCertificate(@PathVariable UUID projectId, @PathVariable UUID periodId,
+                                                          @Valid @RequestBody CertificateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(certificateService.issue(projectId, periodId, request, actor()));
+    }
+
+    @PatchMapping("/certificates/{code}/revoke")
+    CertificateResponse revokeCertificate(@PathVariable String code, @Valid @RequestBody CertificateRevocationRequest request) {
+        return certificateService.revoke(code, request.reason());
     }
 
     private UUID actor() {

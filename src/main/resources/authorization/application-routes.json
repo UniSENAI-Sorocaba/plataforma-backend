@@ -180,6 +180,33 @@
   },
   {
     "method": "POST",
+    "path": "/api/v1/projects/{projectId}/periods/{periodId}/evaluations/{evaluationId}/grade",
+    "publicAccess": false,
+    "action": "GRADE_EVALUATION",
+    "resource": null,
+    "resourceVariable": "evaluationId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/rubrics",
+    "publicAccess": false,
+    "action": "CREATE_RUBRIC",
+    "resource": "rubric",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/rubrics/{rubricId}/versions/{version}",
+    "publicAccess": false,
+    "action": "READ_RUBRIC",
+    "resource": null,
+    "resourceVariable": "rubricId",
+    "scopeVariable": null
+  },
+  {
+    "method": "POST",
     "path": "/api/v1/projects/{projectId}/periods/{periodId}/deliverables",
     "publicAccess": false,
     "action": "CREATE_DELIVERABLE",
@@ -323,5 +350,28 @@
     "resource": null,
     "resourceVariable": "id",
     "scopeVariable": "id"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/extension/projects/{projectId}/periods/{periodId}/certificates",
+    "publicAccess": false,
+    "action": "ISSUE_CERTIFICATE",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/extension/certificates/{code}/revoke",
+    "publicAccess": false,
+    "action": "REVOKE_CERTIFICATE",
+    "resource": null,
+    "resourceVariable": "code",
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/certificates/{code}",
+    "publicAccess": true
   }
 ]
