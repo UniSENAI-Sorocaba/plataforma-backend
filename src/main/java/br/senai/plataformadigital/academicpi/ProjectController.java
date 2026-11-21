@@ -68,6 +68,12 @@ public class ProjectController {
         return service.periods(id, actor());
     }
 
+    @PatchMapping("/projects/{id}/enrollment-periods/{periodId}")
+    EnrollmentPeriodResponse updatePeriod(@PathVariable UUID id, @PathVariable UUID periodId,
+                                           @Valid @RequestBody EnrollmentPeriodUpdateRequest request) {
+        return service.updatePeriod(id, periodId, request, actor());
+    }
+
     @GetMapping("/projects/{id}/participation-requests")
     List<ParticipationRequestResponse> projectRequests(@PathVariable UUID id) {
         return service.projectRequests(id, actor());

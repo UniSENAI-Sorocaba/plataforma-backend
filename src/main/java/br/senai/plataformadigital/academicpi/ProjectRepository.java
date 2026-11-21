@@ -161,6 +161,14 @@ public class ProjectRepository {
         return findPeriod(projectId, id);
     }
 
+    public int updatePeriodEnd(UUID projectId, UUID periodId, Instant endsAt) {
+        return jdbc.update("""
+                UPDATE academic_pi.enrollment_period
+                   SET ends_at = ?, updated_at = now()
+                 WHERE project_id = ? AND id = ? AND starts_at < ?
+                """, Timestamp.from(endsAt), projectId, periodId, Timestamp.from(endsAt));
+    }
+
     public EnrollmentPeriodResponse findPeriod(UUID projectId, UUID periodId) {
         return jdbc.queryForObject("""
                 SELECT id, project_id, academic_term, starts_at, ends_at, created_at, updated_at

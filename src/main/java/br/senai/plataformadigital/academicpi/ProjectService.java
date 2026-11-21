@@ -95,6 +95,21 @@ public class ProjectService {
     }
 
     @Transactional
+    public EnrollmentPeriodResponse updatePeriod(UUID projectId, UUID periodId,
+                                                 EnrollmentPeriodUpdateRequest request, UUID actor) {
+        if (!repository.hasRole(actor, "COORDENACAO")) {
+            throw new ConflictException("O ajuste de períodos exige papel de coordenação.");
+        }
+        if (!request.endsAt().isAfter(clock.instant())) {
+            throw new ConflictException("O novo fim do período deve ser futuro.");
+        }
+        if (repository.updatePeriodEnd(projectId, periodId, request.endsAt()) != 1) {
+            throw new ResourceNotFoundException("Período não encontrado.");
+        }
+        return repository.findPeriod(projectId, periodId);
+    }
+
+    @Transactional
     public ProjectResponse changePublication(UUID id, ProjectPublicationStatus status, UUID actor) {
         requireResponsible(id, actor);
         try {

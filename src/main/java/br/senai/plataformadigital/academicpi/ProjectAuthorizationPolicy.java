@@ -21,7 +21,7 @@ public class ProjectAuthorizationPolicy implements AuthorizationPolicyContributi
         return switch (action) {
             case "CREATE_PROJECT", "READ_PROJECT", "REQUEST_PARTICIPATION",
                     "MANAGE_PROJECT", "DECIDE_PARTICIPATION", "REMOVE_PARTICIPANT",
-                    "CREATE_ENROLLMENT_PERIOD", "CHANGE_PROJECT_LIFECYCLE", "WITHDRAW_PARTICIPATION",
+                    "CREATE_ENROLLMENT_PERIOD", "UPDATE_ENROLLMENT_PERIOD", "CHANGE_PROJECT_LIFECYCLE", "WITHDRAW_PARTICIPATION",
                     "CREATE_DELIVERABLE", "CREATE_EVALUATION", "LIST_EVALUATIONS", "GRADE_EVALUATION",
                     "CREATE_RUBRIC", "READ_RUBRIC" -> true;
             case "LIST_PROJECT_PERIODS", "LIST_PROJECT_PARTICIPATION", "LIST_PROJECT_PARTICIPANTS",
@@ -40,6 +40,7 @@ public class ProjectAuthorizationPolicy implements AuthorizationPolicyContributi
             case "MANAGE_PROJECT", "REMOVE_PARTICIPANT" -> responsible(request.scope().orElseThrow(), user);
             case "DECIDE_PARTICIPATION" -> requestResponsible(request.scope().orElseThrow(), user);
             case "CREATE_ENROLLMENT_PERIOD" -> hasRole(user, "COORDENACAO");
+            case "UPDATE_ENROLLMENT_PERIOD" -> hasRole(user, "COORDENACAO");
             case "CHANGE_PROJECT_LIFECYCLE" -> responsible(request.scope().orElseThrow(), user);
             case "WITHDRAW_PARTICIPATION" -> activeStudent(user) && requestStudent(request.scope().orElseThrow(), user);
             case "CREATE_DELIVERABLE" -> activeStudent(user) && activeParticipant(request.scope().orElseThrow(), user);
