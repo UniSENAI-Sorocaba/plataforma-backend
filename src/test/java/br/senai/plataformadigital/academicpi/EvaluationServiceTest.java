@@ -108,6 +108,13 @@ class EvaluationServiceTest {
                 .isInstanceOf(ConflictException.class).hasMessageContaining("atribuído");
     }
 
+    @Test
+    void listsOnlyEvaluationsAssignedToTheCurrentEvaluator() {
+        when(repository.findAssigned(EVALUATOR)).thenReturn(List.of(response()));
+        assertThat(service.listAssigned(EVALUATOR)).containsExactly(response());
+        verify(repository).findAssigned(EVALUATOR);
+    }
+
     private static EvaluationRequest request(List<UUID> evaluators) {
         return new EvaluationRequest(TARGET, Instant.parse("2026-12-01T12:00:00Z"), evaluators);
     }

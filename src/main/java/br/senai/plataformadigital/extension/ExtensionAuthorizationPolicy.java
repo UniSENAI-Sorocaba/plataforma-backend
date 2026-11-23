@@ -18,7 +18,7 @@ public class ExtensionAuthorizationPolicy implements AuthorizationPolicyContribu
     @Override
     public boolean supports(String action) {
         return switch (action) {
-            case "CREATE_EXTENSION_OPPORTUNITY", "PUBLISH_EXTENSION_OPPORTUNITY", "CLOSE_EXTENSION_OPPORTUNITY",
+            case "CREATE_EXTENSION_OPPORTUNITY", "UPDATE_EXTENSION_OPPORTUNITY", "DELETE_EXTENSION_OPPORTUNITY", "PUBLISH_EXTENSION_OPPORTUNITY", "CLOSE_EXTENSION_OPPORTUNITY", "LIST_MANAGED_EXTENSION_OPPORTUNITIES",
                     "LIST_EXTENSION_APPLICATIONS", "LIST_EXTENSION_ACTIVITIES", "DECIDE_EXTENSION_ACTIVITY",
                     "ISSUE_CERTIFICATE", "REVOKE_CERTIFICATE" -> true;
             case "APPLY_EXTENSION_OPPORTUNITY", "LIST_OWN_EXTENSION_APPLICATIONS", "WITHDRAW_EXTENSION_APPLICATION",
@@ -32,13 +32,14 @@ public class ExtensionAuthorizationPolicy implements AuthorizationPolicyContribu
     public boolean permits(AuthenticatedSubject subject, AuthorizationRequest request) {
         UUID user = UUID.fromString(subject.id());
         return switch (request.action()) {
-            case "CREATE_EXTENSION_OPPORTUNITY", "PUBLISH_EXTENSION_OPPORTUNITY", "CLOSE_EXTENSION_OPPORTUNITY" -> hasRole(user, "COORDENACAO");
+            case "CREATE_EXTENSION_OPPORTUNITY", "UPDATE_EXTENSION_OPPORTUNITY", "DELETE_EXTENSION_OPPORTUNITY", "PUBLISH_EXTENSION_OPPORTUNITY", "CLOSE_EXTENSION_OPPORTUNITY", "LIST_MANAGED_EXTENSION_OPPORTUNITIES" -> hasRole(user, "COORDENACAO");
             case "APPLY_EXTENSION_OPPORTUNITY", "LIST_OWN_EXTENSION_APPLICATIONS" -> activeStudent(user);
             case "SUBMIT_EXTENSION_ACTIVITY", "LIST_OWN_EXTENSION_ACTIVITIES", "READ_OWN_EXTENSION_HOURS" -> activeStudent(user);
             case "CORRECT_EXTENSION_ACTIVITY" -> activeStudent(user) && ownsActivity(request.scope().orElseThrow(), user);
-            case "DECIDE_EXTENSION_ACTIVITY" -> responsibleActivity(request.scope().orElseThrow(), user);
+            case "DECIDE_EXTENSION_ACTIVITY" -> coordinator(user) || responsibleActivity(request.scope().orElseThrow(), user);
             case "WITHDRAW_EXTENSION_APPLICATION" -> activeStudent(user) && ownsApplication(request.scope().orElseThrow(), user);
-            case "LIST_EXTENSION_APPLICATIONS", "LIST_EXTENSION_ACTIVITIES" -> coordinator(user) || responsible(request.scope().orElseThrow(), user);
+            case "LIST_EXTENSION_APPLICATIONS" -> coordinator(user) || responsibleOpportunity(request.scope().orElseThrow(), user);
+            case "LIST_EXTENSION_ACTIVITIES" -> coordinator(user) || responsibleProject(request.scope().orElseThrow(), user);
             case "ISSUE_CERTIFICATE", "REVOKE_CERTIFICATE" -> coordinator(user);
             default -> false;
         };
@@ -68,12 +69,19 @@ public class ExtensionAuthorizationPolicy implements AuthorizationPolicyContribu
                 """, Boolean.class, applicationId, user));
     }
 
-    private boolean responsible(String opportunityId, UUID user) {
+    private boolean responsibleOpportunity(String opportunityId, UUID user) {
         return Boolean.TRUE.equals(jdbc.queryForObject("""
                 SELECT EXISTS (SELECT 1 FROM extension.opportunity o
                     JOIN academic_pi.project_responsible r ON r.project_id = o.project_id
                     WHERE o.id = ?::uuid AND r.user_id = ?)
                 """, Boolean.class, opportunityId, user));
+    }
+
+    private boolean responsibleProject(String projectId, UUID user) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS (SELECT 1 FROM academic_pi.project_responsible
+                    WHERE project_id = ?::uuid AND user_id = ?)
+                """, Boolean.class, projectId, user));
     }
 
     private boolean ownsActivity(String activityId, UUID user) {

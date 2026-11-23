@@ -50,6 +50,19 @@ public class EvaluationService {
         return repository.findAll(projectId, periodId);
     }
 
+    public List<EvaluationResponse> listAssigned(UUID actor) {
+        return repository.findAssigned(actor);
+    }
+
+    public List<EvaluationResponse> listForStudent(UUID actor) {
+        return repository.findForStudent(actor);
+    }
+
+    public List<CoordinationEvaluationResponse> listForCoordination(UUID actor) {
+        if (!repository.isCoordinator(actor)) throw new ConflictException("A operação exige papel de coordenação.");
+        return repository.findAllForCoordination();
+    }
+
     @Transactional
     public EvaluationGradeResponse grade(UUID projectId, UUID periodId, UUID evaluationId,
                                           EvaluationGradeRequest request, UUID actor) {

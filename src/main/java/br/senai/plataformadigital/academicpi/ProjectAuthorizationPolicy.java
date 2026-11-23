@@ -22,8 +22,8 @@ public class ProjectAuthorizationPolicy implements AuthorizationPolicyContributi
             case "CREATE_PROJECT", "READ_PROJECT", "REQUEST_PARTICIPATION",
                     "MANAGE_PROJECT", "DECIDE_PARTICIPATION", "REMOVE_PARTICIPANT",
                     "CREATE_ENROLLMENT_PERIOD", "UPDATE_ENROLLMENT_PERIOD", "CHANGE_PROJECT_LIFECYCLE", "WITHDRAW_PARTICIPATION",
-                    "CREATE_DELIVERABLE", "CREATE_EVALUATION", "LIST_EVALUATIONS", "GRADE_EVALUATION",
-                    "CREATE_RUBRIC", "READ_RUBRIC" -> true;
+                    "CREATE_DELIVERABLE", "CREATE_EVALUATION", "LIST_EVALUATIONS", "LIST_ASSIGNED_EVALUATIONS", "LIST_STUDENT_EVALUATIONS", "GRADE_EVALUATION",
+                    "CREATE_RUBRIC", "READ_RUBRIC", "LIST_COORDINATION_PROJECTS", "UPDATE_COORDINATION_PROJECT", "DELETE_COORDINATION_PROJECT", "LIST_COORDINATION_EVALUATIONS" -> true;
             case "LIST_PROJECT_PERIODS", "LIST_PROJECT_PARTICIPATION", "LIST_PROJECT_PARTICIPANTS",
                     "LIST_OWN_PARTICIPATION", "LIST_MANAGED_PROJECTS" -> true;
             default -> false;
@@ -34,25 +34,29 @@ public class ProjectAuthorizationPolicy implements AuthorizationPolicyContributi
     public boolean permits(AuthenticatedSubject subject, br.senai.plataformadigital.auth.api.authorization.AuthorizationRequest request) {
         UUID user = UUID.fromString(subject.id());
         return switch (request.action()) {
-            case "CREATE_PROJECT" -> hasRole(user, "DOCENTE") || hasRole(user, "COORDENACAO");
+            case "CREATE_PROJECT" -> hasRole(user, "COORDENACAO");
             case "READ_PROJECT" -> activeUser(user);
             case "REQUEST_PARTICIPATION" -> activeStudent(user);
-            case "MANAGE_PROJECT", "REMOVE_PARTICIPANT" -> responsible(request.scope().orElseThrow(), user);
-            case "DECIDE_PARTICIPATION" -> requestResponsible(request.scope().orElseThrow(), user);
+            case "MANAGE_PROJECT", "REMOVE_PARTICIPANT" -> hasRole(user, "COORDENACAO") || responsible(request.scope().orElseThrow(), user);
+            case "DECIDE_PARTICIPATION" -> hasRole(user, "COORDENACAO") || requestResponsible(request.scope().orElseThrow(), user);
             case "CREATE_ENROLLMENT_PERIOD" -> hasRole(user, "COORDENACAO");
             case "UPDATE_ENROLLMENT_PERIOD" -> hasRole(user, "COORDENACAO");
-            case "CHANGE_PROJECT_LIFECYCLE" -> responsible(request.scope().orElseThrow(), user);
+            case "CHANGE_PROJECT_LIFECYCLE" -> hasRole(user, "COORDENACAO") || responsible(request.scope().orElseThrow(), user);
             case "WITHDRAW_PARTICIPATION" -> activeStudent(user) && requestStudent(request.scope().orElseThrow(), user);
             case "CREATE_DELIVERABLE" -> activeStudent(user) && activeParticipant(request.scope().orElseThrow(), user);
             case "CREATE_EVALUATION" -> hasRole(user, "COORDENACAO");
             case "LIST_EVALUATIONS" -> hasRole(user, "COORDENACAO") || responsible(request.scope().orElseThrow(), user);
+            case "LIST_ASSIGNED_EVALUATIONS" -> activeUser(user);
+            case "LIST_STUDENT_EVALUATIONS" -> activeStudent(user);
             case "GRADE_EVALUATION" -> activeUser(user);
             case "CREATE_RUBRIC" -> hasRole(user, "COORDENACAO");
             case "READ_RUBRIC" -> activeUser(user);
             case "LIST_PROJECT_PERIODS", "LIST_PROJECT_PARTICIPATION", "LIST_PROJECT_PARTICIPANTS" ->
-                    responsible(request.scope().orElseThrow(), user);
+                    hasRole(user, "COORDENACAO") || responsible(request.scope().orElseThrow(), user);
             case "LIST_OWN_PARTICIPATION" -> activeStudent(user);
             case "LIST_MANAGED_PROJECTS" -> hasManagedProject(user);
+            case "LIST_COORDINATION_PROJECTS", "UPDATE_COORDINATION_PROJECT", "DELETE_COORDINATION_PROJECT" -> hasRole(user, "COORDENACAO");
+            case "LIST_COORDINATION_EVALUATIONS" -> hasRole(user, "COORDENACAO");
             default -> false;
         };
     }

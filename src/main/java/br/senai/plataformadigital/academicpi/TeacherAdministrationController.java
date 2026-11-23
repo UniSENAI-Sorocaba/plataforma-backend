@@ -1,0 +1,5 @@
+package br.senai.plataformadigital.academicpi;
+import br.senai.plataformadigital.auth.api.authorization.AuthenticatedSubjectProvider;
+import jakarta.validation.Valid; import java.util.List; import java.util.UUID; import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty; import org.springframework.web.bind.annotation.*;
+@RestController @RequestMapping("/api/v1/coordination/teachers") @ConditionalOnProperty(name="spring.datasource.url")
+public class TeacherAdministrationController { private final TeacherAdministrationService service; private final AuthenticatedSubjectProvider subjects; public TeacherAdministrationController(TeacherAdministrationService service, AuthenticatedSubjectProvider subjects){this.service=service;this.subjects=subjects;} @GetMapping List<TeacherResponse> list(@RequestParam(required=false) String q){return service.list(actor(),q);} @PostMapping TeacherResponse create(@Valid @RequestBody StudentRequest request){return service.create(request,actor());} private UUID actor(){return subjects.currentSubject().map(s->UUID.fromString(s.id())).orElseThrow();} }

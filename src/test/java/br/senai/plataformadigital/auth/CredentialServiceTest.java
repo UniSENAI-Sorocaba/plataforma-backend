@@ -14,21 +14,21 @@ class CredentialServiceTest {
 
     @Test
     void hashesWithArgon2idAndMatchesOnlyTheOriginalPassword() {
-        String hash = credentialService.hash("senha-de-teste-segura");
+        String hash = credentialService.hash("senha-de-teste-segura1");
 
         assertThat(hash).startsWith("$argon2id$");
         assertThat(hash).doesNotContain("senha-de-teste-segura");
-        assertThat(credentialService.matches("senha-de-teste-segura", hash)).isTrue();
+        assertThat(credentialService.matches("senha-de-teste-segura1", hash)).isTrue();
         assertThat(credentialService.matches("senha-incorreta", hash)).isFalse();
     }
 
     @Test
     void generatesDifferentSaltForTheSamePassword() {
-        String firstHash = credentialService.hash("senha-de-teste-segura");
-        String secondHash = credentialService.hash("senha-de-teste-segura");
+        String firstHash = credentialService.hash("senha-de-teste-segura1");
+        String secondHash = credentialService.hash("senha-de-teste-segura1");
 
         assertThat(firstHash).isNotEqualTo(secondHash);
-        assertThat(credentialService.matches("senha-de-teste-segura", secondHash)).isTrue();
+        assertThat(credentialService.matches("senha-de-teste-segura1", secondHash)).isTrue();
     }
 
     @Test

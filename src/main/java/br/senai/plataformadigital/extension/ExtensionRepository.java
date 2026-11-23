@@ -44,6 +44,19 @@ public class ExtensionRepository {
         return id;
     }
 
+    public int updateOpportunity(UUID id, OpportunityRequest request) {
+        return jdbc.update("""
+                UPDATE extension.opportunity
+                SET project_id = ?, title = ?, description = ?, starts_at = ?, ends_at = ?, updated_at = now()
+                WHERE id = ? AND status = 'DRAFT'
+                """, request.projectId(), request.title().trim(), request.description().trim(),
+                Timestamp.from(request.startsAt()), Timestamp.from(request.endsAt()), id);
+    }
+
+    public int deleteOpportunity(UUID id) {
+        return jdbc.update("DELETE FROM extension.opportunity WHERE id = ? AND status = 'DRAFT'", id);
+    }
+
     public OpportunityResponse findOpportunity(UUID id) {
         return jdbc.queryForObject("""
                 SELECT id, project_id, title, description, status, starts_at, ends_at, created_at, updated_at
@@ -56,6 +69,13 @@ public class ExtensionRepository {
                 SELECT id, project_id, title, description, status, starts_at, ends_at, created_at, updated_at
                 FROM extension.opportunity WHERE status IN ('PUBLISHED', 'CLOSED')
                 ORDER BY starts_at DESC, id
+                """, (rs, row) -> mapOpportunity(rs));
+    }
+
+    public List<OpportunityResponse> findAllOpportunities() {
+        return jdbc.query("""
+                SELECT id, project_id, title, description, status, starts_at, ends_at, created_at, updated_at
+                FROM extension.opportunity ORDER BY updated_at DESC, id
                 """, (rs, row) -> mapOpportunity(rs));
     }
 

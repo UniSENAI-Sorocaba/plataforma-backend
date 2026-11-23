@@ -57,6 +57,20 @@ public class ProjectController {
         return service.managedProjects(actor());
     }
 
+    @GetMapping("/coordination/projects")
+    List<ProjectResponse> coordinationProjects() { return service.coordinationProjects(actor()); }
+
+    @PatchMapping("/coordination/projects/{id}")
+    ProjectResponse updateProject(@PathVariable UUID id, @Valid @RequestBody ProjectRequest request) {
+        return service.updateProject(id, request, actor());
+    }
+
+    @DeleteMapping("/coordination/projects/{id}")
+    ResponseEntity<Void> archiveProject(@PathVariable UUID id) {
+        service.archiveProject(id, actor());
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/projects/{id}/enrollment-periods")
     ResponseEntity<EnrollmentPeriodResponse> createPeriod(@PathVariable UUID id,
                                                            @Valid @RequestBody EnrollmentPeriodRequest request) {

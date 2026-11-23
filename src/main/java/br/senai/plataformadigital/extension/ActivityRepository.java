@@ -32,6 +32,13 @@ public class ActivityRepository {
                 """, Boolean.class, projectId, teacherId));
     }
 
+    public boolean isCoordinator(UUID userId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ? AND r.name = 'COORDENACAO')
+                OR EXISTS (SELECT 1 FROM institutional.academic_link WHERE user_id = ? AND role = 'coordinator' AND status = 'active')
+                """, Boolean.class, userId, userId));
+    }
+
     public Instant periodEndsAt(UUID projectId, UUID periodId) {
         return jdbc.queryForObject("""
                 SELECT ends_at FROM academic_pi.enrollment_period WHERE project_id = ? AND id = ?
@@ -51,9 +58,10 @@ public class ActivityRepository {
 
     public ActivityResponse find(UUID id) {
         return jdbc.queryForObject("""
-                SELECT id, project_id, period_id, student_id, title, description, requested_hours,
-                       approved_hours, status, rejection_reason, submitted_at, reviewed_at, reviewed_by, updated_at
-                FROM extension.activity WHERE id = ?
+                SELECT a.id, a.project_id, a.period_id, a.student_id, u.full_name AS student_name, u.email AS student_email,
+                       a.title, a.description, a.requested_hours, a.approved_hours, a.status, a.rejection_reason,
+                       a.submitted_at, a.reviewed_at, a.reviewed_by, a.updated_at
+                FROM extension.activity a JOIN auth."user" u ON u.id = a.student_id WHERE a.id = ?
                 """, ActivityRepository::map, id);
     }
 
@@ -67,9 +75,10 @@ public class ActivityRepository {
 
     private List<ActivityResponse> findList(String where, Object... args) {
         return jdbc.query("""
-                SELECT id, project_id, period_id, student_id, title, description, requested_hours,
-                       approved_hours, status, rejection_reason, submitted_at, reviewed_at, reviewed_by, updated_at
-                FROM extension.activity""" + " " + where + " ORDER BY submitted_at, id", ActivityRepository::map, args);
+                SELECT a.id, a.project_id, a.period_id, a.student_id, u.full_name AS student_name, u.email AS student_email,
+                       a.title, a.description, a.requested_hours, a.approved_hours, a.status, a.rejection_reason,
+                       a.submitted_at, a.reviewed_at, a.reviewed_by, a.updated_at
+                FROM extension.activity a JOIN auth."user" u ON u.id = a.student_id""" + " " + where.replace("WHERE ", "WHERE a.") + " ORDER BY a.submitted_at, a.id", ActivityRepository::map, args);
     }
 
     public int updateSubmission(UUID id, UUID studentId, ActivityRequest request) {
@@ -103,6 +112,7 @@ public class ActivityRepository {
     private static ActivityResponse map(ResultSet rs, int row) throws SQLException {
         return new ActivityResponse(rs.getObject("id", UUID.class), rs.getObject("project_id", UUID.class),
                 rs.getObject("period_id", UUID.class), rs.getObject("student_id", UUID.class),
+                rs.getString("student_name"), rs.getString("student_email"),
                 rs.getString("title"), rs.getString("description"), rs.getBigDecimal("requested_hours"),
                 rs.getBigDecimal("approved_hours"), ActivityStatus.valueOf(rs.getString("status")),
                 rs.getString("rejection_reason"), rs.getTimestamp("submitted_at").toInstant(),

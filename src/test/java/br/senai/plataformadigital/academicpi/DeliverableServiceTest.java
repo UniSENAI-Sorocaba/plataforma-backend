@@ -43,6 +43,23 @@ class DeliverableServiceTest {
     }
 
     @Test
+    void rejectsFilesAboveTheApprovedTwentyMiBLimit() {
+        DeliverableInitiationRequest request = new DeliverableInitiationRequest("trabalho.pdf", "application/pdf", 20L * 1024 * 1024 + 1);
+
+        assertThatThrownBy(() -> service.initiate(PROJECT, PERIOD, request, STUDENT))
+                .isInstanceOf(ConflictException.class).hasMessageContaining("20 MB");
+        verify(repository, never()).insert(any(), any(), any(), any(), anyString(), anyString(), any());
+    }
+
+    @Test
+    void rejectsTypesOutsideTheApprovedMvpFormats() {
+        DeliverableInitiationRequest request = new DeliverableInitiationRequest("dados.csv", "text/csv", 10L);
+
+        assertThatThrownBy(() -> service.initiate(PROJECT, PERIOD, request, STUDENT))
+                .isInstanceOf(ConflictException.class).hasMessageContaining("MIME");
+    }
+
+    @Test
     void rejectsNonParticipant() {
         when(repository.isActiveParticipant(PROJECT, PERIOD, STUDENT)).thenReturn(false);
         DeliverableInitiationRequest request = new DeliverableInitiationRequest("trabalho.pdf", "application/pdf", 10L);

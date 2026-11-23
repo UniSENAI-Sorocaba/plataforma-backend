@@ -35,6 +35,7 @@ public class JwtTokenService {
                 .expiresAt(issuedAt.plus(ACCESS_TOKEN_TTL))
                 .claim("email", user.email())
                 .claim("role", user.role())
+                .claim("name", user.fullName())
                 .build();
         JwsHeader header = JwsHeader.with(SignatureAlgorithm.RS256).build();
         String token = encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();

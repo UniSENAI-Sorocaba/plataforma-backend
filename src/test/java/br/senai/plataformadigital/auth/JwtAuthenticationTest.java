@@ -50,9 +50,21 @@ class JwtAuthenticationTest {
 
         PasswordEncoder passwordEncoder = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
         String hash = passwordEncoder.encode("senha-segura");
-        UserAccountRepository repository = email -> email.equals("aluno@example.edu")
-                ? Optional.of(new AuthenticatedUser(USER_ID, email, hash, "STUDENT", true))
-                : Optional.empty();
+        UserAccountRepository repository = new UserAccountRepository() {
+            @Override
+            public Optional<AuthenticatedUser> findByEmail(String email) {
+                return email.equals("aluno@example.edu")
+                        ? Optional.of(new AuthenticatedUser(USER_ID, email, hash, "STUDENT", true))
+                        : Optional.empty();
+            }
+
+            @Override
+            public Optional<AuthenticatedUser> findByCpf(String cpf) {
+                return cpf.equals("52998224725")
+                        ? Optional.of(new AuthenticatedUser(USER_ID, "aluno@example.edu", hash, "STUDENT", true))
+                        : Optional.empty();
+            }
+        };
         JwtTokenService tokens = new JwtTokenService(encoder, Clock.fixed(NOW, ZoneOffset.UTC),
                 "https://plataforma-digital.local", "plataforma-api");
         authenticationService = new AuthenticationService(repository, passwordEncoder, tokens);
@@ -77,6 +89,18 @@ class JwtAuthenticationTest {
         assertThatThrownBy(() -> authenticationService.authenticate("unknown@example.edu", "senha-segura"))
                 .isInstanceOf(InvalidCredentialsException.class);
         assertThatThrownBy(() -> authenticationService.authenticate("aluno@example.edu", "errada"))
+                .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
+    void validCpfUsesTheCanonicalLoginIdentifier() {
+        LoginResponse response = authenticationService.authenticate("529.982.247-25", "senha-segura");
+        assertThat(response.accessToken()).isNotBlank();
+    }
+
+    @Test
+    void invalidCpfDoesNotFallBackToEmailLookup() {
+        assertThatThrownBy(() -> authenticationService.authenticate("529.982.247-26", "senha-segura"))
                 .isInstanceOf(InvalidCredentialsException.class);
     }
 }

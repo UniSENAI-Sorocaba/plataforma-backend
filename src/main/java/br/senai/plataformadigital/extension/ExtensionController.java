@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 @RestController
 @RequestMapping("/api/v1/extension")
@@ -34,8 +35,22 @@ public class ExtensionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request, actor()));
     }
 
+    @PutMapping("/opportunities/{id}")
+    OpportunityResponse update(@PathVariable UUID id, @Valid @RequestBody OpportunityRequest request) {
+        return service.update(id, request, actor());
+    }
+
+    @DeleteMapping("/opportunities/{id}")
+    ResponseEntity<Void> delete(@PathVariable UUID id) {
+        service.delete(id, actor());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/opportunities")
     List<OpportunityResponse> publicOpportunities() { return service.publicOpportunities(); }
+
+    @GetMapping("/opportunities/manage")
+    List<OpportunityResponse> allOpportunities() { return service.allOpportunities(actor()); }
 
     @GetMapping("/opportunities/{id}")
     OpportunityResponse get(@PathVariable UUID id) { return service.publicOpportunity(id); }
