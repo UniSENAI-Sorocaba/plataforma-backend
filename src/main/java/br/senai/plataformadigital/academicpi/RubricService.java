@@ -30,6 +30,10 @@ public class RubricService {
         return repository.find(rubricId, version);
     }
 
+    public RubricVersionResponse getDefault() {
+        return repository.findDefault();
+    }
+
     private void validate(List<RubricCriterionRequest> criteria) {
         if (criteria.stream().map(RubricCriterionRequest::code).map(String::trim).map(String::toLowerCase).distinct().count() != criteria.size())
             throw new ConflictException("Critérios duplicados.");

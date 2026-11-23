@@ -134,7 +134,7 @@ class ActivityServiceTest {
     }
 
     private static ActivityResponse activity(ActivityStatus status, BigDecimal approved, String reason) {
-        return new ActivityResponse(ACTIVITY, PROJECT, PERIOD, STUDENT, "Visita técnica",
+        return new ActivityResponse(ACTIVITY, PROJECT, PERIOD, STUDENT, "Aluno teste", "aluno@example.com", "Visita técnica",
                 "Relato detalhado da atividade realizada.", new BigDecimal("4.00"), approved, status, reason,
                 NOW, status == ActivityStatus.SUBMITTED ? null : NOW, status == ActivityStatus.SUBMITTED ? null : TEACHER, NOW);
     }

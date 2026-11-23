@@ -76,4 +76,22 @@ class ProjectServiceTest {
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("futuro");
     }
+
+    @Test
+    void coordinationCanListUpdateAndArchiveProjects() {
+        UUID actor = UUID.randomUUID();
+        UUID project = UUID.randomUUID();
+        when(repository.hasRole(actor, "COORDENACAO")).thenReturn(true);
+        var request = new ProjectRequest("Projeto atualizado", "Resumo suficientemente longo para o projeto", "Descrição suficientemente longa para atender ao contrato do projeto.", ProjectClassification.PI, ProjectContinuity.CONTINUOUS, null, ProjectPublicationStatus.DRAFT, List.of(actor));
+        var expected = new ProjectResponse(project, request.title(), request.summary(), request.description(), request.classification(), request.continuity(), null, request.publicationStatus(), "ACTIVE", List.of(actor), Instant.now(), Instant.now());
+        when(repository.findAllForCoordination()).thenReturn(List.of(expected));
+        when(repository.updateProject(project, request)).thenReturn(1);
+        when(repository.find(project)).thenReturn(expected);
+        when(repository.archiveProject(project)).thenReturn(1);
+
+        org.assertj.core.api.Assertions.assertThat(service.coordinationProjects(actor)).containsExactly(expected);
+        org.assertj.core.api.Assertions.assertThat(service.updateProject(project, request, actor)).isSameAs(expected);
+        service.archiveProject(project, actor);
+        verify(repository).archiveProject(project);
+    }
 }

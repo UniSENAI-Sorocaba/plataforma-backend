@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @ConditionalOnProperty(name = "spring.datasource.url")
 public class DeliverableService {
-    private static final long MAX_BYTES = 25L * 1024 * 1024;
+    private static final long MAX_BYTES = 20L * 1024 * 1024;
     private static final Duration TOKEN_LIFETIME = Duration.ofMinutes(15);
     private final DeliverableRepository repository;
     private final DeliverableStorage storage;
@@ -89,17 +89,13 @@ public class DeliverableService {
     }
 
     private void validateMetadata(DeliverableInitiationRequest request) {
-        if (request.sizeBytes() > MAX_BYTES) throw new ConflictException("O arquivo excede o limite de 25 MB.");
+        if (request.sizeBytes() > MAX_BYTES) throw new ConflictException("O arquivo excede o limite de 20 MB.");
         String name = request.fileName().toLowerCase(Locale.ROOT);
         String type = request.contentType().toLowerCase(Locale.ROOT);
         boolean allowed = (name.endsWith(".pdf") && type.equals("application/pdf"))
                 || (name.endsWith(".png") && type.equals("image/png"))
                 || ((name.endsWith(".jpg") || name.endsWith(".jpeg")) && type.equals("image/jpeg"))
-                || (name.endsWith(".txt") && type.equals("text/plain"))
-                || (name.endsWith(".csv") && type.equals("text/csv"))
-                || (name.endsWith(".zip") && type.equals("application/zip"))
-                || (name.endsWith(".docx") && type.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
-                || (name.endsWith(".xlsx") && type.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+                || (name.endsWith(".docx") && type.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
         if (!allowed) throw new ConflictException("Extensão e tipo MIME não permitidos.");
     }
 

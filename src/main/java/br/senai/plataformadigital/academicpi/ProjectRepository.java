@@ -120,6 +120,30 @@ public class ProjectRepository {
                 """, (rs, row) -> map(rs, rs.getObject("id", UUID.class)), userId);
     }
 
+    public List<ProjectResponse> findAllForCoordination() {
+        return jdbc.query("""
+                SELECT id, title, summary, description, classification, continuity, end_date,
+                       publication_status, lifecycle_status, created_at, updated_at
+                FROM academic_pi.project
+                ORDER BY updated_at DESC, id
+                """, (rs, row) -> map(rs, rs.getObject("id", UUID.class)));
+    }
+
+    public int updateProject(UUID id, ProjectRequest request) {
+        return jdbc.update("""
+                UPDATE academic_pi.project
+                SET title = ?, summary = ?, description = ?, classification = ?, continuity = ?,
+                    end_date = ?, publication_status = ?, updated_at = now()
+                WHERE id = ? AND lifecycle_status = 'ACTIVE'
+                """, request.title().trim(), request.summary().trim(), request.description().trim(),
+                request.classification().name(), request.continuity().name(), request.endDate(),
+                request.publicationStatus().name(), id);
+    }
+
+    public int archiveProject(UUID id) {
+        return jdbc.update("UPDATE academic_pi.project SET lifecycle_status = 'ARCHIVED', updated_at = now() WHERE id = ? AND lifecycle_status = 'ACTIVE'", id);
+    }
+
     public List<UUID> responsibleIds(UUID projectId) {
         return jdbc.query("SELECT user_id FROM academic_pi.project_responsible WHERE project_id = ? ORDER BY user_id",
                 (rs, row) -> rs.getObject("user_id", UUID.class), projectId);
@@ -203,39 +227,53 @@ public class ProjectRepository {
 
     public ParticipationRequestResponse findRequest(UUID id) {
         return jdbc.queryForObject("""
-                SELECT id, project_id, period_id, student_id, status, requested_at, decided_at, withdrawn_at
-                FROM academic_pi.participation_request WHERE id = ?
+                SELECT r.id, r.project_id, r.period_id, r.student_id, r.status, r.requested_at, r.decided_at, r.withdrawn_at,
+                       u.full_name AS student_name, u.email AS student_email, ep.academic_term
+                FROM academic_pi.participation_request r
+                JOIN auth."user" u ON u.id = r.student_id
+                JOIN academic_pi.enrollment_period ep ON ep.id = r.period_id AND ep.project_id = r.project_id
+                WHERE r.id = ?
                 """, ProjectRepository::mapRequest, id);
     }
 
     public List<ParticipationRequestResponse> findProjectRequests(UUID projectId) {
         return jdbc.query("""
-                SELECT id, project_id, period_id, student_id, status, requested_at, decided_at, withdrawn_at
-                FROM academic_pi.participation_request WHERE project_id = ?
-                ORDER BY requested_at DESC, id
+                SELECT r.id, r.project_id, r.period_id, r.student_id, r.status, r.requested_at, r.decided_at, r.withdrawn_at,
+                       u.full_name AS student_name, u.email AS student_email, ep.academic_term
+                FROM academic_pi.participation_request r
+                JOIN auth."user" u ON u.id = r.student_id
+                JOIN academic_pi.enrollment_period ep ON ep.id = r.period_id AND ep.project_id = r.project_id
+                WHERE r.project_id = ?
+                ORDER BY r.requested_at DESC, r.id
                 """, ProjectRepository::mapRequest, projectId);
     }
 
     public List<ParticipationRequestResponse> findStudentRequests(UUID studentId) {
         return jdbc.query("""
-                SELECT id, project_id, period_id, student_id, status, requested_at, decided_at, withdrawn_at
-                FROM academic_pi.participation_request WHERE student_id = ?
-                ORDER BY requested_at DESC, id
+                SELECT r.id, r.project_id, r.period_id, r.student_id, r.status, r.requested_at, r.decided_at, r.withdrawn_at,
+                       u.full_name AS student_name, u.email AS student_email, ep.academic_term
+                FROM academic_pi.participation_request r
+                JOIN auth."user" u ON u.id = r.student_id
+                JOIN academic_pi.enrollment_period ep ON ep.id = r.period_id AND ep.project_id = r.project_id
+                WHERE r.student_id = ?
+                ORDER BY r.requested_at DESC, r.id
                 """, ProjectRepository::mapRequest, studentId);
     }
 
     public List<ParticipantResponse> findParticipants(UUID projectId, UUID periodId) {
         return jdbc.query("""
-                SELECT project_id, period_id, student_id, status, joined_at, removed_at, removal_reason
-                FROM academic_pi.project_participant
-                WHERE project_id = ? AND period_id = ?
-                ORDER BY joined_at, student_id
+                SELECT p.project_id, p.period_id, p.student_id, p.status, p.joined_at, p.removed_at, p.removal_reason,
+                       u.full_name AS student_name, u.email AS student_email
+                FROM academic_pi.project_participant p
+                JOIN auth."user" u ON u.id = p.student_id
+                WHERE p.project_id = ? AND p.period_id = ?
+                ORDER BY p.joined_at, p.student_id
                 """, (rs, row) -> new ParticipantResponse(
                 rs.getObject("project_id", UUID.class), rs.getObject("period_id", UUID.class),
                 rs.getObject("student_id", UUID.class), rs.getString("status"),
                 rs.getTimestamp("joined_at").toInstant(),
                 rs.getTimestamp("removed_at") == null ? null : rs.getTimestamp("removed_at").toInstant(),
-                rs.getString("removal_reason")), projectId, periodId);
+                rs.getString("removal_reason"), rs.getString("student_name"), rs.getString("student_email")), projectId, periodId);
     }
 
     public ParticipationRequestResponse decideRequest(UUID requestId, ParticipationRequestStatus status, UUID actor) {
@@ -278,7 +316,8 @@ public class ProjectRepository {
                 ParticipationRequestStatus.valueOf(rs.getString("status")),
                 rs.getTimestamp("requested_at").toInstant(),
                 rs.getTimestamp("decided_at") == null ? null : rs.getTimestamp("decided_at").toInstant(),
-                rs.getTimestamp("withdrawn_at") == null ? null : rs.getTimestamp("withdrawn_at").toInstant());
+                rs.getTimestamp("withdrawn_at") == null ? null : rs.getTimestamp("withdrawn_at").toInstant(),
+                rs.getString("student_name"), rs.getString("student_email"), rs.getString("academic_term"));
     }
 
     private ProjectResponse map(ResultSet rs, UUID id) throws SQLException {

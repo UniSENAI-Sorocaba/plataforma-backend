@@ -27,5 +27,8 @@ public class CredentialService {
         if (rawPassword == null || rawPassword.isBlank()) {
             throw new IllegalArgumentException("A senha não pode ser vazia.");
         }
+        if (rawPassword.length() < 8 || !rawPassword.matches(".*[A-Za-z].*") || !rawPassword.matches(".*\\d.*")) {
+            throw new IllegalArgumentException("A senha deve conter pelo menos 8 caracteres, uma letra e um número.");
+        }
     }
 }

@@ -118,6 +118,6 @@ public class ActivityService {
     }
 
     private void requireResponsible(UUID projectId, UUID actor) {
-        if (!repository.isResponsible(projectId, actor)) throw new ConflictException("Docente fora do escopo do projeto.");
+        if (!repository.isResponsible(projectId, actor) && !repository.isCoordinator(actor)) throw new ConflictException("Docente fora do escopo do projeto.");
     }
 }

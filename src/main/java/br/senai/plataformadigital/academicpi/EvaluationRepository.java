@@ -71,12 +71,71 @@ public class EvaluationRepository {
 
     public List<EvaluationResponse> findAll(UUID projectId, UUID periodId) {
         return jdbc.query("""
-                SELECT id, project_id, period_id, evaluated_student_id, evaluation_date,
-                       created_by, created_at, updated_at
-                FROM academic_pi.evaluation
-                WHERE project_id = ? AND period_id = ?
-                ORDER BY evaluation_date, id
-                """, (rs, row) -> map(rs, findEvaluators(rs.getObject("id", UUID.class))), projectId, periodId);
+                SELECT e.id, e.project_id, e.period_id, p.title AS project_title, ep.academic_term, e.evaluated_student_id, e.evaluation_date,
+                       e.created_by, e.created_at, e.updated_at, e.rubric_version_id, e.final_score,
+                       u.full_name AS evaluated_student_name, u.email AS evaluated_student_email
+                FROM academic_pi.evaluation e
+                JOIN academic_pi.project p ON p.id = e.project_id
+                JOIN academic_pi.enrollment_period ep ON ep.id = e.period_id
+                JOIN auth."user" u ON u.id = e.evaluated_student_id
+                WHERE e.project_id = ? AND e.period_id = ?
+                ORDER BY e.evaluation_date, e.id
+                """, (rs, row) -> map(rs, findEvaluators(rs.getObject("id", UUID.class)),
+                        rs.getString("evaluated_student_name"), rs.getString("evaluated_student_email"),
+                        rs.getObject("rubric_version_id", UUID.class), rs.getBigDecimal("final_score")), projectId, periodId);
+    }
+
+    public List<EvaluationResponse> findAssigned(UUID evaluatorId) {
+        return jdbc.query("""
+                SELECT e.id, e.project_id, e.period_id, p.title AS project_title, ep.academic_term, e.evaluated_student_id, e.evaluation_date,
+                       e.created_by, e.created_at, e.updated_at, e.rubric_version_id, e.final_score,
+                       u.full_name AS evaluated_student_name, u.email AS evaluated_student_email
+                FROM academic_pi.evaluation e
+                JOIN academic_pi.evaluation_evaluator ee ON ee.evaluation_id = e.id
+                JOIN academic_pi.project p ON p.id = e.project_id
+                JOIN academic_pi.enrollment_period ep ON ep.id = e.period_id
+                JOIN auth."user" u ON u.id = e.evaluated_student_id
+                WHERE ee.evaluator_id = ?
+                ORDER BY e.evaluation_date, e.id
+                """, (rs, row) -> map(rs, findEvaluators(rs.getObject("id", UUID.class)),
+                        rs.getString("evaluated_student_name"), rs.getString("evaluated_student_email"),
+                        rs.getObject("rubric_version_id", UUID.class), rs.getBigDecimal("final_score")), evaluatorId);
+    }
+
+    public List<EvaluationResponse> findForStudent(UUID studentId) {
+        return jdbc.query("""
+                SELECT e.id, e.project_id, e.period_id, p.title AS project_title, ep.academic_term, e.evaluated_student_id, e.evaluation_date,
+                       e.created_by, e.created_at, e.updated_at, e.rubric_version_id, e.final_score,
+                       u.full_name AS evaluated_student_name, u.email AS evaluated_student_email
+                FROM academic_pi.evaluation e
+                JOIN academic_pi.project p ON p.id = e.project_id
+                JOIN academic_pi.enrollment_period ep ON ep.id = e.period_id
+                JOIN auth."user" u ON u.id = e.evaluated_student_id
+                WHERE e.evaluated_student_id = ?
+                ORDER BY e.evaluation_date, e.id
+                """, (rs, row) -> map(rs, findEvaluators(rs.getObject("id", UUID.class)),
+                        rs.getString("evaluated_student_name"), rs.getString("evaluated_student_email"),
+                        rs.getObject("rubric_version_id", UUID.class), rs.getBigDecimal("final_score")), studentId);
+    }
+
+    public List<CoordinationEvaluationResponse> findAllForCoordination() {
+        return jdbc.query("""
+                SELECT e.id, p.title AS project_title, ep.academic_term, u.full_name AS student_name,
+                       e.evaluation_date, e.final_score,
+                       COALESCE(string_agg(DISTINCT eu.full_name, ', ' ORDER BY eu.full_name), '') AS evaluator_names
+                FROM academic_pi.evaluation e
+                JOIN academic_pi.project p ON p.id = e.project_id
+                JOIN academic_pi.enrollment_period ep ON ep.id = e.period_id
+                JOIN auth."user" u ON u.id = e.evaluated_student_id
+                LEFT JOIN academic_pi.evaluation_evaluator ee ON ee.evaluation_id = e.id
+                LEFT JOIN auth."user" eu ON eu.id = ee.evaluator_id
+                GROUP BY e.id, p.title, ep.academic_term, u.full_name, e.evaluation_date, e.final_score
+                ORDER BY e.evaluation_date, e.id
+                """, (rs, row) -> new CoordinationEvaluationResponse(
+                        rs.getObject("id", UUID.class), rs.getString("project_title"),
+                        rs.getString("academic_term"), rs.getString("student_name"),
+                        rs.getTimestamp("evaluation_date").toInstant(), rs.getString("evaluator_names"),
+                        rs.getBigDecimal("final_score")));
     }
 
     public boolean isAssignedEvaluator(UUID evaluationId, UUID evaluatorId) {
@@ -107,11 +166,26 @@ public class EvaluationRepository {
                 """, (rs, row) -> rs.getObject("evaluator_id", UUID.class), evaluationId);
     }
 
-    private static EvaluationResponse map(ResultSet rs, List<UUID> evaluators) throws SQLException {
+    private List<InstitutionalDirectoryEntry> findEvaluatorDetails(UUID evaluationId) {
+        return jdbc.query("""
+                SELECT u.id, u.full_name, u.email, COALESCE(r.name, 'DOCENTE') AS role
+                FROM academic_pi.evaluation_evaluator ee
+                JOIN auth."user" u ON u.id = ee.evaluator_id
+                LEFT JOIN user_roles ur ON ur.user_id = u.id AND ur.scope_type = 'GLOBAL'
+                LEFT JOIN roles r ON r.id = ur.role_id
+                WHERE ee.evaluation_id = ? ORDER BY u.full_name, u.email
+                """, (rs, row) -> new InstitutionalDirectoryEntry(rs.getObject("id", UUID.class),
+                        rs.getString("full_name"), rs.getString("email"), rs.getString("role")), evaluationId);
+    }
+
+    private EvaluationResponse map(ResultSet rs, List<UUID> evaluators, String studentName, String studentEmail,
+                                   UUID rubricVersionId, java.math.BigDecimal finalScore) throws SQLException {
         return new EvaluationResponse(rs.getObject("id", UUID.class), rs.getObject("project_id", UUID.class),
-                rs.getObject("period_id", UUID.class), rs.getObject("evaluated_student_id", UUID.class),
+                rs.getObject("period_id", UUID.class), rs.getString("project_title"), rs.getString("academic_term"),
+                rs.getObject("evaluated_student_id", UUID.class),
                 rs.getTimestamp("evaluation_date").toInstant(), rs.getObject("created_by", UUID.class),
-                rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant(), evaluators);
+                rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant(), evaluators,
+                studentName, studentEmail, findEvaluatorDetails(rs.getObject("id", UUID.class)), rubricVersionId, finalScore);
     }
 
     private boolean exists(String sql, Object... args) {

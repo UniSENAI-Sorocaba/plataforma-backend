@@ -10,4 +10,6 @@ public record ParticipantResponse(
         String status,
         Instant joinedAt,
         Instant removedAt,
-        String removalReason) { }
+        String removalReason,
+        String studentName,
+        String studentEmail) { }

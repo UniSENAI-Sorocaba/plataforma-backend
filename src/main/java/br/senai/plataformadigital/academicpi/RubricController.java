@@ -16,6 +16,8 @@ public class RubricController {
     public RubricController(RubricService service, AuthenticatedSubjectProvider subjects) { this.service = service; this.subjects = subjects; }
     @PostMapping
     ResponseEntity<RubricVersionResponse> create(@Valid @RequestBody RubricCreateRequest request) { return ResponseEntity.status(201).body(service.create(request, actor())); }
+    @GetMapping("/default")
+    RubricVersionResponse getDefault() { return service.getDefault(); }
     @GetMapping("/{rubricId}/versions/{version}")
     RubricVersionResponse get(@PathVariable UUID rubricId, @PathVariable int version) { return service.get(rubricId, version); }
     private UUID actor() { return subjects.currentSubject().map(s -> UUID.fromString(s.id())).orElseThrow(); }

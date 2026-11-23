@@ -42,10 +42,10 @@ public final class JdbcUserAccountRepository implements UserAccountRepository {
     }
 
     private Optional<AuthenticatedUser> find(String column, Object value) {
-        String sql = "SELECT u.id, u.email, u.password_hash, u.status, "
+        String sql = "SELECT u.id, u.email, u.full_name, u.password_hash, u.status, "
                 + "COALESCE((SELECT r.name FROM user_roles ur JOIN roles r ON r.id = ur.role_id "
                 + "WHERE ur.user_id = u.id AND ur.scope_type = 'GLOBAL' "
-                + "ORDER BY CASE r.name WHEN 'COORDENACAO' THEN 1 WHEN 'DOCENTE' THEN 2 ELSE 3 END LIMIT 1), 'ALUNO') AS role "
+                + "ORDER BY CASE r.name WHEN 'ADMIN' THEN 1 WHEN 'COORDENACAO' THEN 2 WHEN 'DOCENTE' THEN 3 ELSE 4 END LIMIT 1), 'ALUNO') AS role "
                 + "FROM auth.\"user\" u WHERE u." + column + " = ?";
         try (var connection = dataSource.getConnection(); var statement = connection.prepareStatement(sql)) {
             statement.setObject(1, value);
@@ -56,7 +56,8 @@ public final class JdbcUserAccountRepository implements UserAccountRepository {
                         result.getString("email"),
                         result.getString("password_hash"),
                         normalizeRole(result.getString("role")),
-                        "active".equals(result.getString("status"))));
+                        "active".equals(result.getString("status")),
+                        result.getString("full_name")));
             }
         } catch (Exception exception) {
             throw new IllegalStateException("Falha ao consultar conta acadêmica.", exception);

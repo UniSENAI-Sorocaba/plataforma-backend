@@ -34,7 +34,26 @@ public class ExtensionService {
         }
     }
 
+    @Transactional
+    public OpportunityResponse update(UUID id, OpportunityRequest request, UUID actor) {
+        requireCoordinator(actor);
+        validateWindow(request.startsAt(), request.endsAt());
+        if (repository.updateOpportunity(id, request) != 1) throw new ConflictException("Somente editais em rascunho podem ser editados.");
+        return get(id);
+    }
+
+    @Transactional
+    public void delete(UUID id, UUID actor) {
+        requireCoordinator(actor);
+        if (repository.deleteOpportunity(id) != 1) throw new ConflictException("Somente editais em rascunho podem ser excluídos.");
+    }
+
     public List<OpportunityResponse> publicOpportunities() { return repository.findPublicOpportunities(); }
+
+    public List<OpportunityResponse> allOpportunities(UUID actor) {
+        requireCoordinator(actor);
+        return repository.findAllOpportunities();
+    }
 
     public OpportunityResponse get(UUID id) {
         try { return repository.findOpportunity(id); }

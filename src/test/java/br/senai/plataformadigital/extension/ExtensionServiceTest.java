@@ -112,6 +112,22 @@ class ExtensionServiceTest {
         assertThat(service.withdraw(APPLICATION, STUDENT).status()).isEqualTo(ApplicationStatus.WITHDRAWN);
     }
 
+    @Test
+    void coordinatorCanListUpdateAndDeleteDraftOpportunities() {
+        when(repository.hasRole(STUDENT, "COORDENACAO")).thenReturn(true);
+        var request = new OpportunityRequest(null, "Edital atualizado", "Descrição suficiente para atualizar o edital.", NOW, NOW.plusSeconds(60));
+        var expected = opportunity(NOW, NOW.plusSeconds(60));
+        when(repository.findAllOpportunities()).thenReturn(java.util.List.of(expected));
+        when(repository.updateOpportunity(OPPORTUNITY, request)).thenReturn(1);
+        when(repository.findOpportunity(OPPORTUNITY)).thenReturn(expected);
+        when(repository.deleteOpportunity(OPPORTUNITY)).thenReturn(1);
+
+        assertThat(service.allOpportunities(STUDENT)).containsExactly(expected);
+        assertThat(service.update(OPPORTUNITY, request, STUDENT)).isEqualTo(expected);
+        service.delete(OPPORTUNITY, STUDENT);
+        verify(repository).deleteOpportunity(OPPORTUNITY);
+    }
+
     private static OpportunityResponse opportunity(Instant startsAt, Instant endsAt) {
         return new OpportunityResponse(OPPORTUNITY, null, "Edital de Extensão", "Descrição suficiente para o edital.",
                 OpportunityStatus.PUBLISHED, startsAt, endsAt, NOW, NOW);

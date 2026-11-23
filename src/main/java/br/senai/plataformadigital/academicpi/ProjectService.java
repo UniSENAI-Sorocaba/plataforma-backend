@@ -24,7 +24,7 @@ public class ProjectService {
 
     @Transactional
     public ProjectResponse create(ProjectRequest request, UUID actor) {
-        requireTeacher(actor);
+        if (!repository.hasRole(actor, "COORDENACAO")) throw new ConflictException("A criação de projetos exige papel de coordenação.");
         validateProject(request);
         if (request.responsibleTeacherIds().stream().distinct().count() != request.responsibleTeacherIds().size()) {
             throw new ConflictException("Docentes responsáveis duplicados.");
@@ -57,6 +57,25 @@ public class ProjectService {
     public List<ProjectResponse> managedProjects(UUID actor) {
         requireTeacher(actor);
         return repository.findManaged(actor);
+    }
+
+    public List<ProjectResponse> coordinationProjects(UUID actor) {
+        if (!repository.hasRole(actor, "COORDENACAO")) throw new ConflictException("A operação exige papel de coordenação.");
+        return repository.findAllForCoordination();
+    }
+
+    @Transactional
+    public ProjectResponse updateProject(UUID id, ProjectRequest request, UUID actor) {
+        if (!repository.hasRole(actor, "COORDENACAO")) throw new ConflictException("A edição de projetos exige papel de coordenação.");
+        validateProject(request);
+        if (repository.updateProject(id, request) != 1) throw new ResourceNotFoundException("Projeto não encontrado ou arquivado.");
+        return get(id);
+    }
+
+    @Transactional
+    public void archiveProject(UUID id, UUID actor) {
+        if (!repository.hasRole(actor, "COORDENACAO")) throw new ConflictException("A exclusão de projetos exige papel de coordenação.");
+        if (repository.archiveProject(id) != 1) throw new ResourceNotFoundException("Projeto não encontrado ou já arquivado.");
     }
 
     public List<EnrollmentPeriodResponse> periods(UUID projectId, UUID actor) {
@@ -205,6 +224,6 @@ public class ProjectService {
     }
 
     private void requireResponsible(UUID projectId, UUID actor) {
-        if (!repository.isResponsible(projectId, actor)) throw new ConflictException("Docente fora do escopo do projeto.");
+        if (!repository.isResponsible(projectId, actor) && !repository.hasRole(actor, "COORDENACAO")) throw new ConflictException("Docente fora do escopo do projeto.");
     }
 }

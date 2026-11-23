@@ -33,6 +33,11 @@ public class RubricRepository {
         return new RubricVersionResponse((UUID) header[0], (UUID) header[1], (String) header[2], (String) header[3], (Integer) header[4], criteria);
     }
 
+    public RubricVersionResponse findDefault() {
+        UUID rubricId = jdbc.queryForObject("SELECT id FROM academic_pi.rubric ORDER BY created_at, id LIMIT 1", UUID.class);
+        return find(rubricId, 1);
+    }
+
     private static RubricCriterionResponse mapCriterion(ResultSet rs) throws SQLException {
         return new RubricCriterionResponse(rs.getObject("id", UUID.class), rs.getString("code"), rs.getString("label"), rs.getBigDecimal("weight"), rs.getBigDecimal("min_score"), rs.getBigDecimal("max_score"));
     }

@@ -11,5 +11,12 @@ public record ParticipationRequestResponse(
         ParticipationRequestStatus status,
         Instant requestedAt,
         Instant decidedAt,
-        Instant withdrawnAt) {
+        Instant withdrawnAt,
+        String studentName,
+        String studentEmail,
+        String academicTerm) {
+    public ParticipationRequestResponse(UUID id, UUID projectId, UUID periodId, UUID studentId,
+            ParticipationRequestStatus status, Instant requestedAt, Instant decidedAt, Instant withdrawnAt) {
+        this(id, projectId, periodId, studentId, status, requestedAt, decidedAt, withdrawnAt, null, null, null);
+    }
 }

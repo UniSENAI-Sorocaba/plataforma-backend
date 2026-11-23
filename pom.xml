@@ -109,6 +109,13 @@
                 <exclude>br/senai/plataformadigital/academicpi/RubricRepository*</exclude>
                 <exclude>br/senai/plataformadigital/extension/ExtensionController*</exclude>
                 <exclude>br/senai/plataformadigital/extension/ExtensionRepository*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/StudentAdministrationRepository*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/StudentAdministrationController*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/AcademicClassRepository*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/AcademicClassController*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/TeacherAdministrationController*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/InstitutionalAuditRepository*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/InstitutionalAuditController*</exclude>
               </excludes>
               <rules>
                 <rule>
