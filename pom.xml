@@ -15,6 +15,8 @@
   <description>Backend modular da Plataforma Digital</description>
   <properties>
     <java.version>21</java.version>
+    <phase1.coverage.line.minimum>0.30</phase1.coverage.line.minimum>
+    <phase1.coverage.branch.minimum>0.50</phase1.coverage.branch.minimum>
   </properties>
   <dependencies>
     <dependency>
@@ -27,12 +29,115 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-jdbc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-mail</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-crypto</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-oauth2-jose</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
+      <version>1.86</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.16</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>phase1-coverage-report</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>phase1-coverage-gate</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <!-- Adapters de HTTP, JDBC e filesystem são verificados por contrato/E2E;
+                   a barreira unitária permanece aplicada à regra de negócio. -->
+              <excludes>
+                <exclude>br/senai/plataformadigital/academicpi/DeliverableController*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/DeliverableRepository*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/DeliverableStorage*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/EvaluationController*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/EvaluationRepository*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/RubricController*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/RubricRepository*</exclude>
+                <exclude>br/senai/plataformadigital/extension/ExtensionController*</exclude>
+                <exclude>br/senai/plataformadigital/extension/ExtensionRepository*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/StudentAdministrationRepository*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/StudentAdministrationController*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/AcademicClassRepository*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/AcademicClassController*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/TeacherAdministrationController*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/InstitutionalAuditRepository*</exclude>
+                <exclude>br/senai/plataformadigital/academicpi/InstitutionalAuditController*</exclude>
+              </excludes>
+              <rules>
+                <rule>
+                  <element>BUNDLE</element>
+                  <limits>
+                    <limit>
+                      <counter>LINE</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>${phase1.coverage.line.minimum}</minimum>
+                    </limit>
+                    <limit>
+                      <counter>BRANCH</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>${phase1.coverage.branch.minimum}</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>

@@ -1,0 +1,630 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/v1/coordination/audit",
+    "publicAccess": false,
+    "action": "READ_INSTITUTIONAL_AUDIT",
+    "resource": "institutional-audit",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/coordination/classes",
+    "publicAccess": false,
+    "action": "MANAGE_INSTITUTIONAL_CLASSES",
+    "resource": "institutional-classes",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/coordination/classes",
+    "publicAccess": false,
+    "action": "MANAGE_INSTITUTIONAL_CLASSES",
+    "resource": "institutional-classes",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/coordination/classes/{id}/status",
+    "publicAccess": false,
+    "action": "MANAGE_INSTITUTIONAL_CLASSES",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": null
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/coordination/students/{studentId}",
+    "publicAccess": false,
+    "action": "MANAGE_INSTITUTIONAL_STUDENTS",
+    "resource": null,
+    "resourceVariable": "studentId",
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/coordination/students/export",
+    "publicAccess": false,
+    "action": "MANAGE_INSTITUTIONAL_STUDENTS",
+    "resource": "institutional-students",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/coordination/teachers",
+    "publicAccess": false,
+    "action": "MANAGE_INSTITUTIONAL_STAFF",
+    "resource": "institutional-staff",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/coordination/teachers",
+    "publicAccess": false,
+    "action": "MANAGE_INSTITUTIONAL_STAFF",
+    "resource": "institutional-staff",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/coordination/students",
+    "publicAccess": false,
+    "action": "MANAGE_INSTITUTIONAL_STUDENTS",
+    "resource": "institutional-students",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/coordination/students",
+    "publicAccess": false,
+    "action": "MANAGE_INSTITUTIONAL_STUDENTS",
+    "resource": "institutional-students",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/coordination/students/{studentId}/status",
+    "publicAccess": false,
+    "action": "MANAGE_INSTITUTIONAL_STUDENTS",
+    "resource": null,
+    "resourceVariable": "studentId",
+    "scopeVariable": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/coordination/students/import",
+    "publicAccess": false,
+    "action": "MANAGE_INSTITUTIONAL_STUDENTS",
+    "resource": "institutional-students",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/institutional/directory",
+    "publicAccess": false,
+    "action": "LIST_INSTITUTIONAL_DIRECTORY",
+    "resource": "institutional-directory",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/login",
+    "publicAccess": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/refresh",
+    "publicAccess": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/logout",
+    "publicAccess": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/first-access",
+    "publicAccess": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/password-recovery/request",
+    "publicAccess": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/password-recovery/reset",
+    "publicAccess": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/projects",
+    "publicAccess": false,
+    "action": "CREATE_PROJECT",
+    "resource": "project",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/projects/{id}",
+    "publicAccess": false,
+    "action": "READ_PROJECT",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/projects",
+    "publicAccess": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/projects/search",
+    "publicAccess": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/impacts",
+    "publicAccess": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/projects/{projectId}/impacts",
+    "publicAccess": false,
+    "action": "CREATE_IMPACT",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/impacts/{id}/submit",
+    "publicAccess": false,
+    "action": "SUBMIT_IMPACT",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/impacts/{id}/approve",
+    "publicAccess": false,
+    "action": "APPROVE_IMPACT",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/projects/managed",
+    "publicAccess": false,
+    "action": "LIST_MANAGED_PROJECTS",
+    "resource": "project",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/coordination/projects",
+    "publicAccess": false,
+    "action": "LIST_COORDINATION_PROJECTS",
+    "resource": "coordination-projects",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/coordination/projects/{id}",
+    "publicAccess": false,
+    "action": "UPDATE_COORDINATION_PROJECT",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/coordination/projects/{id}",
+    "publicAccess": false,
+    "action": "DELETE_COORDINATION_PROJECT",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/projects/{id}/enrollment-periods",
+    "publicAccess": false,
+    "action": "CREATE_ENROLLMENT_PERIOD",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/projects/{id}/enrollment-periods",
+    "publicAccess": false,
+    "action": "LIST_PROJECT_PERIODS",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/projects/{id}/enrollment-periods/{periodId}",
+    "publicAccess": false,
+    "action": "UPDATE_ENROLLMENT_PERIOD",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/projects/{id}/publication",
+    "publicAccess": false,
+    "action": "MANAGE_PROJECT",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/projects/{id}/lifecycle",
+    "publicAccess": false,
+    "action": "CHANGE_PROJECT_LIFECYCLE",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/projects/{id}/participation-requests",
+    "publicAccess": false,
+    "action": "REQUEST_PARTICIPATION",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/projects/{id}/participation-requests",
+    "publicAccess": false,
+    "action": "LIST_PROJECT_PARTICIPATION",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/participation-requests/{id}",
+    "publicAccess": false,
+    "action": "DECIDE_PARTICIPATION",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/participation-requests/{id}/withdraw",
+    "publicAccess": false,
+    "action": "WITHDRAW_PARTICIPATION",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/participation-requests/mine",
+    "publicAccess": false,
+    "action": "LIST_OWN_PARTICIPATION",
+    "resource": "participation",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/projects/{projectId}/periods/{periodId}/participants",
+    "publicAccess": false,
+    "action": "LIST_PROJECT_PARTICIPANTS",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/projects/{projectId}/periods/{periodId}/participants/{studentId}",
+    "publicAccess": false,
+    "action": "REMOVE_PARTICIPANT",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/projects/{projectId}/periods/{periodId}/evaluations",
+    "publicAccess": false,
+    "action": "CREATE_EVALUATION",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/evaluations/assigned",
+    "publicAccess": false,
+    "action": "LIST_ASSIGNED_EVALUATIONS",
+    "resource": "evaluations",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/evaluations/student",
+    "publicAccess": false,
+    "action": "LIST_STUDENT_EVALUATIONS",
+    "resource": "evaluations",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/evaluations/coordination",
+    "publicAccess": false,
+    "action": "LIST_COORDINATION_EVALUATIONS",
+    "resource": "evaluations",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/projects/{projectId}/periods/{periodId}/evaluations",
+    "publicAccess": false,
+    "action": "LIST_EVALUATIONS",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/projects/{projectId}/periods/{periodId}/evaluations/{evaluationId}/grade",
+    "publicAccess": false,
+    "action": "GRADE_EVALUATION",
+    "resource": null,
+    "resourceVariable": "evaluationId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/rubrics",
+    "publicAccess": false,
+    "action": "CREATE_RUBRIC",
+    "resource": "rubric",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/rubrics/{rubricId}/versions/{version}",
+    "publicAccess": false,
+    "action": "READ_RUBRIC",
+    "resource": null,
+    "resourceVariable": "rubricId",
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/rubrics/default",
+    "publicAccess": false,
+    "action": "READ_RUBRIC",
+    "resource": "rubric",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/projects/{projectId}/periods/{periodId}/deliverables",
+    "publicAccess": false,
+    "action": "CREATE_DELIVERABLE",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/deliverables/{id}/content",
+    "publicAccess": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/deliverables/{id}/download",
+    "publicAccess": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/extension/opportunities",
+    "publicAccess": false,
+    "action": "CREATE_EXTENSION_OPPORTUNITY",
+    "resource": "opportunity",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/extension/opportunities/{id}",
+    "publicAccess": false,
+    "action": "UPDATE_EXTENSION_OPPORTUNITY",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/extension/opportunities/{id}",
+    "publicAccess": false,
+    "action": "DELETE_EXTENSION_OPPORTUNITY",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/opportunities",
+    "publicAccess": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/opportunities/manage",
+    "publicAccess": false,
+    "action": "LIST_MANAGED_EXTENSION_OPPORTUNITIES",
+    "resource": "extension-opportunities",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/opportunities/{id}",
+    "publicAccess": true
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/extension/opportunities/{id}/publish",
+    "publicAccess": false,
+    "action": "PUBLISH_EXTENSION_OPPORTUNITY",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/extension/opportunities/{id}/close",
+    "publicAccess": false,
+    "action": "CLOSE_EXTENSION_OPPORTUNITY",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/extension/opportunities/{id}/applications",
+    "publicAccess": false,
+    "action": "APPLY_EXTENSION_OPPORTUNITY",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/opportunities/{id}/applications",
+    "publicAccess": false,
+    "action": "LIST_EXTENSION_APPLICATIONS",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/applications/mine",
+    "publicAccess": false,
+    "action": "LIST_OWN_EXTENSION_APPLICATIONS",
+    "resource": "application",
+    "resourceVariable": null,
+    "scopeVariable": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/extension/applications/{id}/withdraw",
+    "publicAccess": false,
+    "action": "WITHDRAW_EXTENSION_APPLICATION",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/extension/projects/{projectId}/periods/{periodId}/activities",
+    "publicAccess": false,
+    "action": "SUBMIT_EXTENSION_ACTIVITY",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/projects/{projectId}/periods/{periodId}/activities/mine",
+    "publicAccess": false,
+    "action": "LIST_OWN_EXTENSION_ACTIVITIES",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/projects/{projectId}/periods/{periodId}/activities",
+    "publicAccess": false,
+    "action": "LIST_EXTENSION_ACTIVITIES",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/extension/projects/{projectId}/periods/{periodId}/hours/mine",
+    "publicAccess": false,
+    "action": "READ_OWN_EXTENSION_HOURS",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/extension/activities/{id}",
+    "publicAccess": false,
+    "action": "CORRECT_EXTENSION_ACTIVITY",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/extension/activities/{id}/decision",
+    "publicAccess": false,
+    "action": "DECIDE_EXTENSION_ACTIVITY",
+    "resource": null,
+    "resourceVariable": "id",
+    "scopeVariable": "id"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/extension/projects/{projectId}/periods/{periodId}/certificates",
+    "publicAccess": false,
+    "action": "ISSUE_CERTIFICATE",
+    "resource": null,
+    "resourceVariable": "projectId",
+    "scopeVariable": "projectId"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/extension/certificates/{code}/revoke",
+    "publicAccess": false,
+    "action": "REVOKE_CERTIFICATE",
+    "resource": null,
+    "resourceVariable": "code",
+    "scopeVariable": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/certificates/{code}",
+    "publicAccess": true
+  }
+]

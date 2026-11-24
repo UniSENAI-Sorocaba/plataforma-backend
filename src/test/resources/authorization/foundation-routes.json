@@ -1,0 +1,17 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/v1/foundation/errors/not-found",
+    "publicAccess": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/foundation/errors/conflict",
+    "publicAccess": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/foundation/errors/validation",
+    "publicAccess": true
+  }
+]
