@@ -40,6 +40,16 @@ O endpoint `POST /api/v1/auth/login` recebe `{ "email": "...", "password": "..."
 
 Quando `security.jwt.enabled=true` e um `DataSource` PostgreSQL estiver configurado, o adapter JDBC usa as tabelas DB-005 para persistir sessões e refresh tokens. O prazo padrão do refresh token é de 30 dias e pode ser alterado por `security.session.refresh-lifetime`. O modo sem datasource não ativa esse adapter.
 
+## Observabilidade técnica
+
+O escopo técnico entregue para o BE-016 é correlação e registro operacional sanitizado de requisições HTTP. O `RequestLoggingFilter` usa o identificador estabelecido pelo `CorrelationIdFilter` e não cria um segundo ID. O cabeçalho de correlação é `X-Correlation-Id`; valores recebidos só são aceitos quando correspondem a `[A-Za-z0-9._-]{1,64}`. Valores ausentes ou inválidos são substituídos por um UUID gerado no servidor.
+
+O log registra apenas o identificador de correlação, método HTTP permitido, status e duração. Não registra caminho, query string, headers, corpo, conteúdo funcional nem mensagem/stack trace de exceção. O filtro não cria nem altera persistência de auditoria.
+
+A `main` já contém a auditoria institucional `institutional.audit_log` e o endpoint `GET /api/v1/coordination/audit`, adicionados pela PR #74. Esse recurso preexistente não é alterado por esta mudança; sua compatibilidade com a decisão de produto sobre não manter auditoria de negócio precisa ser reconciliada separadamente.
+
+Critérios verificáveis deste escopo: a resposta e o corpo de erro compartilham o mesmo `X-Correlation-Id`; o log de sucesso contém o ID, método permitido, status e duração; o log de falha contém o mesmo ID e método, sem detalhes da exceção; o `CorrelationIdFilter` limpa o MDC ao final da requisição. Componentes futuros devem manter a mesma minimização e não registrar credenciais, dados pessoais desnecessários ou payloads.
+
 ## Governança
 
 A autorização HTTP da BE-010 está documentada em

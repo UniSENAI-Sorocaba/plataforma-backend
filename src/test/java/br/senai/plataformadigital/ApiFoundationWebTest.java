@@ -2,6 +2,12 @@ package br.senai.plataformadigital;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import br.senai.plataformadigital.shared.RequestLoggingFilter;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import java.util.UUID;
+import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -54,6 +60,34 @@ class ApiFoundationWebTest {
 
         assertThat(response.getStatusCode().value()).isEqualTo(404);
         assertThat(response.getBody()).contains("RESOURCE_NOT_FOUND", "correlationId");
+    }
+
+    @Test
+    void invalidCorrelationIdIsReplacedAndSharedByErrorResponseAndLog() {
+        Logger logger = (Logger) LoggerFactory.getLogger(RequestLoggingFilter.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        ResponseEntity<String> response;
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-Correlation-Id", "invalid private value");
+            response = client.exchange("/api/v1/foundation/errors/not-found", HttpMethod.GET,
+                    new HttpEntity<>(headers), String.class);
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+
+        String correlationId = response.getHeaders().getFirst("X-Correlation-Id");
+        assertThat(correlationId).isNotBlank();
+        assertThat(UUID.fromString(correlationId).toString()).isEqualTo(correlationId);
+        assertThat(response.getBody()).contains("\"correlationId\":\"" + correlationId + "\"");
+        assertThat(appender.list).anySatisfy(event -> {
+            assertThat(event.getFormattedMessage()).contains("correlationId=" + correlationId);
+            assertThat(event.getFormattedMessage()).doesNotContain("invalid private value");
+        });
     }
 
     @Test
