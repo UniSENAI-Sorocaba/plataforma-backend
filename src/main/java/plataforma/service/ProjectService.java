@@ -35,6 +35,7 @@ public class ProjectService {
     }
 
     public PageResponse<ProjectResponse> findAll(Pageable pageable) {
+        // AC-PI-001-15: a listagem de projeto não carrega solicitação pendente, justificativa nem membros.
         return PageResponse.from(repository.findAll(pageable), mapper::toResponse);
     }
 
