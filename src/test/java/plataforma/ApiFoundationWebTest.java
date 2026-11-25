@@ -18,10 +18,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.test.web.servlet.MockMvc;
 import plataforma.config.CorrelationIdFilter;
+import plataforma.auth.SecurityConfiguration;
 import plataforma.exception.ApiExceptionHandler;
 
 @WebMvcTest(properties = {"spring.mvc.throw-exception-if-no-handler-found=true", "spring.web.resources.add-mappings=false"})
-@Import({ApiExceptionHandler.class, CorrelationIdFilter.class, ApiFoundationWebTest.TestController.class})
+@Import({ApiExceptionHandler.class, CorrelationIdFilter.class, SecurityConfiguration.class,
+        ApiFoundationWebTest.TestController.class})
 class ApiFoundationWebTest {
     @Autowired private MockMvc mockMvc;
 

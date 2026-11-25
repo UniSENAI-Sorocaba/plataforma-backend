@@ -9,7 +9,6 @@ import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 @EnableConfigurationProperties(Argon2Properties.class)
 public class PasswordHashConfiguration {
 
-    // TODO(BE-004): invoke verify during login and persist a replacement hash after successful authentication.
     @Bean
     PasswordHasher passwordHasher(Argon2Properties properties) {
         Argon2PasswordEncoder encoder = new Argon2PasswordEncoder(

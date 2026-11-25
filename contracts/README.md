@@ -7,7 +7,9 @@ baseline fixada em `../.governance-baseline`. Revisor da task: João.
 ## Escopo e autoridade
 
 `openapi.yaml` é o contrato local, versionado em OpenAPI 3.1 com JSON Schema
-2020-12, para as rotas operacionais e os controllers de CRUD e auditoria da develop. O link de descoberta do Actuator e o fallback de erro são infraestrutura do framework.
+2020-12, para o login institucional, as rotas operacionais e os controllers de
+CRUD e auditoria da develop. O link de descoberta do Actuator e o fallback de
+erro são infraestrutura do framework.
 
 O YAML é a fonte editável; `target/contracts/openapi.json` é um bundle derivado
 e não deve ser versionado ou editado. `info.version` identifica a versão deste
@@ -20,8 +22,8 @@ de contratos exige security scheme, 401 e 403 com application/problem+json
 nas operações protegidas. As probes mantêm o formato nativo do Actuator.
 
 Os componentes compartilhados descrevem o ProblemDetail, a correlação e o
-envelope paginado da develop. LoginRequest e LoginResponse são propostas para
-CONTRACT-AUTH-001. A rota de login depende da implementação de autenticação.
+envelope paginado da develop. O login por CPF retorna somente o access token;
+refresh e revogação pertencem ao fluxo de sessão da BE-006.
 
 ## Verificação local
 

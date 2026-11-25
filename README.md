@@ -206,8 +206,13 @@ Conexão com o banco por variáveis de ambiente: `DB_URL`, `DB_USERNAME` e `DB_P
 
 Os parâmetros de Argon2id podem ser ajustados por `ARGON2_MEMORY_KIB`, `ARGON2_ITERATIONS` e
 `ARGON2_PARALLELISM`. Os valores de partida no `.env.example` são os defaults mínimos da OWASP;
-devem ser tratados como **a calibrar no ambiente alvo** antes de produção. O fluxo de login local
-continua pendente da BE-004.
+devem ser tratados como **a calibrar no ambiente alvo** antes de produção. O login institucional
+usa CPF, verifica senhas com o `PasswordHasher` e emite access tokens RS256 quando `JWT_ENABLED=true`.
+O ciclo de refresh e revogação permanece no escopo da BE-006.
+
+Tentativas inválidas são limitadas a cinco por CPF e por endereço remoto em quinze minutos. O
+limitador atual mantém contadores apenas na memória desta instância: reinícios os limpam e múltiplas
+réplicas não compartilham o estado; produção distribuída precisa de um armazenamento compartilhado.
 
 Para rodar fora do Docker (com o Postgres do compose no ar):
 
@@ -220,12 +225,12 @@ Defina `DB_PASSWORD` previamente no ambiente local antes de executar o comando.
 ## Banco de dados
 
 O schema é responsabilidade do time de banco (repositório `plataforma-database`): este repositório
-não tem SQL. Enquanto as migrations oficiais não existem, os perfis `local` e `test` deixam o
-Hibernate criar as tabelas a partir das entidades.
+não tem migrations de produção. O perfil padrão valida o schema oficial. Os perfis `local` e `test`
+criam/atualizam as tabelas JPA legadas para CRUD; aplique também as migrations oficiais antes de
+habilitar o login, que consulta `auth.user` e as tabelas públicas de RBAC.
 
-Quando as migrations forem publicadas, remova o bloco `spring.jpa` de `application-local.yaml`. O
-perfil volta ao `validate`, que confere se as entidades batem com as tabelas oficiais. Se algum
-campo divergir, ajuste a entidade.
+O login não usa a entidade JPA `UserAccount`, que ainda representa `auth.user_account`; seu
+repositório de autenticação consulta o schema canônico `auth.user` definido pelas migrations.
 
 ## Testes
 
@@ -233,9 +238,17 @@ campo divergir, ajuste a entidade.
 mvn verify
 ```
 
+## Chaves JWT
+
+Quando `JWT_ENABLED=true`, o login lê `JWT_PUBLIC_KEY` e `JWT_PRIVATE_KEY` como chaves RSA em
+formato PEM (`PUBLIC KEY` e `PRIVATE KEY`). Configure-as por um mecanismo seguro de ambiente ou
+secret manager; não versione chaves privadas. `JWT_ISSUER` e `JWT_AUDIENCE` configuram as claims
+do token.
+
 | Teste | O que cobre |
 | --- | --- |
 | `ProjectCrudIntegrationTests` | CRUD de projeto pela API, validação (400), relação inexistente (404) e e-mail duplicado (409) |
+| `AuthenticationIntegrationTests` | Login por CPF em PostgreSQL, erros genéricos, limite 429, rehash Argon2id e validação/uso do JWT RS256 |
 | `AuditEventIntegrationTests` | gravação e consulta de auditoria com `jsonb` |
 | `AuditEventControllerTest` | rotas de auditoria e resposta 404 |
 | `AuditEventServiceTest` | regras do service de auditoria (unitário) |
@@ -264,7 +277,6 @@ As regras abaixo estão marcadas no código com `TODO BE-0xx`, o ID da task no b
 
 | Task | Onde | O que falta |
 | --- | --- | --- |
-| BE-004 / BE-005 | `UserAccount` | login JWT RS256 e senha com hash Argon2id |
 | BE-010 | `UserService` e demais | permissões por perfil (RBAC) em todos os endpoints |
 | BE-007 | `ProjectService`, `ProjectStatus` | validar papéis, campos e transições de status |
 | BE-008 | `ProjectMemberService` | convites: aceitar/recusar sem duplicidade |
@@ -274,9 +286,9 @@ As regras abaixo estão marcadas no código com `TODO BE-0xx`, o ID da task no b
 | BE-014 | `ActivityService` | deferir/indeferir com motivo e total de horas |
 | BE-017 | `CertificateService` | gerar hash/QR verificável e validação pública |
 
-Até BE-004 e BE-010, **os endpoints não exigem login**. Por isso os CRUDs, o Swagger e a consulta de
-auditoria ficam desligados no perfil padrão (produção). Quando a autenticação existir, remova a
-propriedade `platform.crud.api.enabled` e as anotações `@ConditionalOnProperty` dos controllers.
+O endpoint público `POST /api/v1/auth/login` emite o access token. As permissões dos endpoints
+protegidos continuam sob a BE-010; por isso CRUDs, Swagger e consulta de auditoria ficam desligados
+no perfil padrão (produção).
 
 ## Governança
 

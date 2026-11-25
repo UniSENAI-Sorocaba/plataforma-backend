@@ -14,7 +14,6 @@ import org.springframework.context.annotation.Profile;
  * Process-local adapter used by tests and local development until AUTH-10-DB
  * supplies the durable implementation.
  */
-@Profile("test")
 public final class InMemoryPasswordRecoveryTokenRepository implements PasswordRecoveryTokenRepository {
     private final Map<UUID, PasswordRecoveryToken> tokens = new ConcurrentHashMap<>();
 

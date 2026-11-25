@@ -32,7 +32,7 @@ public final class PasswordHasher {
 
     /** Returns false for malformed hashes without exposing encoder details. */
     public boolean verify(String password, String encodedHash) {
-        if (password == null || !isSupportedHash(encodedHash)) {
+        if (password == null || !supportsHash(encodedHash)) {
             return false;
         }
         try {
@@ -56,7 +56,7 @@ public final class PasswordHasher {
                 || parameters.hashLength() != properties.getHashLength();
     }
 
-    private boolean isSupportedHash(String encodedHash) {
+    boolean supportsHash(String encodedHash) {
         return parseSupportedHash(encodedHash) != null;
     }
 
