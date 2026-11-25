@@ -37,6 +37,7 @@ class CrudServicesCoverageTests {
         var enrollments = mock(EnrollmentService.class);
         var service = new ActivityService(repository, mapper, enrollments);
         var entity = new Activity();
+        entity.setTitle("Horas");
         var enrollment = new Enrollment();
         entity.setEnrollment(enrollment);
         var request = new ActivityRequest(relatedId, "Horas", "descrição", 2, "evidence/key");
@@ -47,7 +48,7 @@ class CrudServicesCoverageTests {
 
         service.create(request);
         assertThat(service.findAll(PageRequest.of(0, 10)).content()).hasSize(1);
-        service.findById(id);
+        assertThat(service.findById(id).title()).isEqualTo("Horas");
         service.update(id, request);
         assertThat(entity.getEnrollment()).isSameAs(enrollment);
         assertThat(entity.getTitle()).isEqualTo("Horas");
@@ -64,6 +65,7 @@ class CrudServicesCoverageTests {
         var enrollments = mock(EnrollmentService.class);
         var service = new CertificateService(repository, mapper, enrollments);
         var entity = new Certificate();
+        entity.setHours(12);
         var enrollment = new Enrollment();
         entity.setEnrollment(enrollment);
         var request = new CertificateRequest(relatedId, 12);
@@ -74,7 +76,7 @@ class CrudServicesCoverageTests {
 
         service.create(request);
         service.findAll(PageRequest.of(0, 10));
-        service.findById(id);
+        assertThat(service.findById(id).hours()).isEqualTo(12);
         service.update(id, request);
         assertThat(entity.getEnrollment()).isSameAs(enrollment);
         assertThat(entity.getHours()).isEqualTo(12);
@@ -105,7 +107,8 @@ class CrudServicesCoverageTests {
 
         service.create(request);
         service.findAll(PageRequest.of(0, 10));
-        service.findById(id);
+        assertThat(service.findById(id).noticeId()).isEqualTo(notice.getId());
+        assertThat(service.findById(id).studentId()).isEqualTo(student.getId());
         service.update(id, request);
         assertThat(entity.getNotice()).isSameAs(notice);
         assertThat(entity.getStudent()).isSameAs(student);
@@ -122,6 +125,7 @@ class CrudServicesCoverageTests {
         var users = mock(UserService.class);
         var service = new NoticeService(repository, mapper, users);
         var entity = new Notice();
+        entity.setTitle("Edital");
         var advisor = new UserAccount();
         entity.setAdvisor(advisor);
         var request = new NoticeRequest("Edital", "Descrição", LocalDate.now(), LocalDate.now(), 10, relatedId, true);
@@ -132,7 +136,7 @@ class CrudServicesCoverageTests {
 
         service.create(request);
         service.findAll(PageRequest.of(0, 10));
-        service.findById(id);
+        assertThat(service.findById(id).title()).isEqualTo("Edital");
         service.update(id, request);
         assertThat(entity.getAdvisor()).isSameAs(advisor);
         assertThat(entity.getTitle()).isEqualTo("Edital");
@@ -168,7 +172,7 @@ class CrudServicesCoverageTests {
         assertThat(entity.getLeader()).isSameAs(leader);
         assertThat(entity.getAdvisor()).isNull();
         service.findAll(PageRequest.of(0, 10));
-        service.findById(id);
+        assertThat(service.findById(id).advisorId()).isNull();
         service.delete(id);
         verify(repository).delete(entity);
         when(repository.findById(relatedId)).thenReturn(Optional.empty());
@@ -183,6 +187,7 @@ class CrudServicesCoverageTests {
         var users = mock(UserService.class);
         var service = new ProjectMemberService(repository, mapper, projects, users);
         var entity = new ProjectMember();
+        entity.setMemberRole(MemberRole.MEMBER);
         var project = new Project();
         var user = new UserAccount();
         entity.setProject(project);
@@ -196,7 +201,7 @@ class CrudServicesCoverageTests {
 
         service.create(request);
         service.findAll(PageRequest.of(0, 10));
-        service.findById(id);
+        assertThat(service.findById(id).memberRole()).isEqualTo(MemberRole.MEMBER);
         service.update(id, request);
         assertThat(entity.getProject()).isSameAs(project);
         assertThat(entity.getUser()).isSameAs(user);
@@ -214,6 +219,7 @@ class CrudServicesCoverageTests {
         var projects = mock(ProjectService.class);
         var service = new ExaminationBoardService(repository, mapper, projects);
         var entity = new ExaminationBoard();
+        entity.setLocation("Sala");
         var project = new Project();
         entity.setProject(project);
         var request = new ExaminationBoardRequest(relatedId, Instant.parse("2026-11-20T12:00:00Z"),
@@ -225,7 +231,7 @@ class CrudServicesCoverageTests {
 
         service.create(request);
         service.findAll(PageRequest.of(0, 10));
-        service.findById(id);
+        assertThat(service.findById(id).location()).isEqualTo("Sala");
         service.update(id, request);
         assertThat(entity.getProject()).isSameAs(project);
         assertThat(entity.getLocation()).isEqualTo("Sala");
@@ -243,6 +249,7 @@ class CrudServicesCoverageTests {
         var users = mock(UserService.class);
         var service = new EvaluationService(repository, mapper, boards, users);
         var entity = new Evaluation();
+        entity.setTechnicalGrade(BigDecimal.TEN);
         var board = new ExaminationBoard();
         var evaluator = new UserAccount();
         entity.setBoard(board);
@@ -256,7 +263,7 @@ class CrudServicesCoverageTests {
 
         service.create(request);
         service.findAll(PageRequest.of(0, 10));
-        service.findById(id);
+        assertThat(service.findById(id).technicalGrade()).isEqualByComparingTo(BigDecimal.TEN);
         service.update(id, request);
         assertThat(entity.getBoard()).isSameAs(board);
         assertThat(entity.getEvaluator()).isSameAs(evaluator);
@@ -273,6 +280,7 @@ class CrudServicesCoverageTests {
         var mapper = new UserMapper();
         var service = new UserService(repository, mapper);
         var entity = new UserAccount();
+        entity.setEmail("ana@example.test");
         var request = new UserRequest("ana@example.test", "Ana", Role.STUDENT, true);
         when(repository.saveAndFlush(any(UserAccount.class))).thenAnswer(call -> call.getArgument(0));
         when(repository.findById(id)).thenReturn(Optional.of(entity));
@@ -280,7 +288,7 @@ class CrudServicesCoverageTests {
 
         service.create(request);
         service.findAll(PageRequest.of(0, 10));
-        service.findById(id);
+        assertThat(service.findById(id).email()).isEqualTo("ana@example.test");
         service.update(id, request);
         assertThat(entity.getEmail()).isEqualTo("ana@example.test");
         service.delete(id);

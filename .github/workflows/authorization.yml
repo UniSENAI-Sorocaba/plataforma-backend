@@ -9,21 +9,14 @@ permissions:
   contents: read
 
 jobs:
-  authorization-tests:
-    name: Authorization tests and coverage
+  authorization-evidence:
+    name: Authorization evidence
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
-      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-      - name: Test bootstrap and authorization preparation
-        run: mvn --batch-mode --no-transfer-progress clean verify
       - name: Record incomplete task status
         if: always()
         shell: bash

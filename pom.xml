@@ -28,6 +28,7 @@
     <be020.coverage.haltOnFailure>true</be020.coverage.haltOnFailure>
     <!-- Seletores críticos BE-020; cada classe pertence a um único seletor. -->
     <be020.coverage.critical.auth.include>plataforma/auth/**</be020.coverage.critical.auth.include>
+    <be020.coverage.critical.auth.controller.include>plataforma/controller/PasswordRecoveryController*</be020.coverage.critical.auth.controller.include>
     <be020.coverage.critical.authorization.api.include>br/senai/plataformadigital/auth/api/authorization/**</be020.coverage.critical.authorization.api.include>
     <be020.coverage.critical.authorization.web.include>br/senai/plataformadigital/auth/web/**</be020.coverage.critical.authorization.web.include>
     <be020.coverage.critical.security.include>plataforma/security/**</be020.coverage.critical.security.include>
@@ -144,6 +145,7 @@
               <outputDirectory>${project.reporting.outputDirectory}/jacoco-critical</outputDirectory>
               <includes>
                 <include>${be020.coverage.critical.auth.include}</include>
+                <include>${be020.coverage.critical.auth.controller.include}</include>
                 <include>${be020.coverage.critical.authorization.api.include}</include>
                 <include>${be020.coverage.critical.authorization.web.include}</include>
                 <include>${be020.coverage.critical.security.include}</include>
@@ -162,6 +164,7 @@
               <haltOnFailure>${be020.coverage.haltOnFailure}</haltOnFailure>
               <includes>
                 <include>${be020.coverage.critical.auth.include}</include>
+                <include>${be020.coverage.critical.auth.controller.include}</include>
                 <include>${be020.coverage.critical.authorization.api.include}</include>
                 <include>${be020.coverage.critical.authorization.web.include}</include>
                 <include>${be020.coverage.critical.security.include}</include>
