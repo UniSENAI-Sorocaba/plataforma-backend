@@ -5,12 +5,57 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.classic.spi.ThrowableProxy;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import plataforma.security.logging.SecretMaskingConverter;
 
 class SecretRedactorTest {
+
+    @Test
+    void redactsStructuredValuesAcrossSecretAndFailureKeyFamilies() {
+        var values = new LinkedHashMap<String, Object>();
+        values.put(null, "preserve null key");
+        values.put("profilePassword", "secret");
+        values.put("senhaTemporaria", "secret");
+        values.put("client_secret", "secret");
+        values.put("serviceApiKey", "secret");
+        values.put("credential_hash", "secret");
+        values.put("tax_id", "12345678900");
+        values.put("documentNumber", "123");
+        values.put("accessToken", "secret");
+        values.put("stack_trace", "private trace");
+        values.put("throwableInfo", "private throwable");
+        values.put("cause", "private cause");
+        values.put("errorCode", "private error");
+        values.put("failureReason", "private failure");
+        values.put("safe", List.of("password=value", 42, new IllegalStateException("hidden")));
+
+        var result = SecretRedactor.redactMap(values);
+
+        assertThat(SecretRedactor.redactMap(null)).isNull();
+        assertThat(result.get(null)).isEqualTo("preserve null key");
+        assertThat(result).containsEntry("profilePassword", "[REDACTED]")
+                .containsEntry("senhaTemporaria", "[REDACTED]")
+                .containsEntry("client_secret", "[REDACTED]")
+                .containsEntry("serviceApiKey", "[REDACTED]")
+                .containsEntry("credential_hash", "[REDACTED]")
+                .containsEntry("tax_id", "[REDACTED]")
+                .containsEntry("documentNumber", "[REDACTED]")
+                .containsEntry("stack_trace", "[exception details omitted]")
+                .containsEntry("throwableInfo", "[exception details omitted]")
+                .containsEntry("cause", "[exception details omitted]")
+                .containsEntry("errorCode", "[exception details omitted]")
+                .containsEntry("failureReason", "[exception details omitted]");
+        assertThat(result.get("safe").toString()).contains("[REDACTED]", "42", "[exception details omitted]");
+        assertThat(SecretRedactor.redactText(null)).isNull();
+        assertThat(SecretRedactor.redactText("")).isEmpty();
+        assertThat(SecretRedactor.redactText("token=first, password=second; safe=value"))
+                .isEqualTo("token=[REDACTED], password=[REDACTED]; safe=value");
+        assertThat(SecretRedactor.redactText("token=\"unterminated\nstatus=ok"))
+                .isEqualTo("token=\"[REDACTED]\nstatus=ok");
+    }
 
     @Test
     void redactsSecretFieldsAndBearerValuesFromText() {

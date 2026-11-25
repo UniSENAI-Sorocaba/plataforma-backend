@@ -1,6 +1,7 @@
 package br.senai.plataformadigital.auth.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
@@ -56,6 +57,13 @@ class AuthorizationRoutesTests {
         var mappings = new RequestMappingHandlerMapping();
         mappings.registerMapping(RequestMappingInfo.paths("/records/{id}").build(), new Controller(), Controller.class.getMethod("read"));
         assertThrows(IllegalStateException.class, () -> new AuthorizationRoutes(List.of(protectedRule())).verify(mappings));
+    }
+
+    @Test void applicationCatalogClassifiesImpactHistoryRoute() throws Exception {
+        var resources = new PathMatchingResourcePatternResolver().getResources("classpath*:authorization/*.json");
+        var catalog = AuthorizationRoutes.load(resources, new ObjectMapper());
+
+        assertEquals("impact:AUDIT", catalog.find("GET", "/api/v1/impacts/{id}/history").action());
     }
 
     public static class Controller { public String read() { return "record"; } }

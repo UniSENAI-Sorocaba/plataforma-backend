@@ -28,6 +28,8 @@ import plataforma.service.NoticeService;
 import plataforma.service.ProjectMemberService;
 import plataforma.service.ProjectService;
 import plataforma.service.UserService;
+import plataforma.repository.UserAccountRepository;
+import plataforma.auth.passwordrecovery.PasswordRecoveryTokenRepository;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.availability.AvailabilityChangeEvent;
@@ -60,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 })
 @ActiveProfiles("local")
 @MockitoBean(types = {ActivityService.class,
+        UserAccountRepository.class,
         AuditEventService.class,
         CertificateService.class,
         EnrollmentService.class,
@@ -71,6 +74,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         UserService.class})
 @Import(OperationalContractTests.HealthConfiguration.class)
 class OperationalContractTests {
+    @MockitoBean(name = "passwordRecoveryTokenRepository")
+    private PasswordRecoveryTokenRepository passwordRecoveryTokenRepository;
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final MediaType ACTUATOR_JSON =
             MediaType.parseMediaType("application/vnd.spring-boot.actuator.v3+json");

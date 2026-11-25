@@ -22,6 +22,7 @@ import plataforma.security.logging.SecretMaskingConverter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PasswordHasherTest {
 
@@ -117,6 +118,99 @@ class PasswordHasherTest {
 
         properties.setMemoryKib(20_001);
         assertThat(properties.isConfiguredWithinHashSanityLimits()).isFalse();
+    }
+
+    @Test
+    void configuredParametersAndStoredHashBoundsRejectBothSidesOfEveryLimit() {
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isTrue();
+        properties.getHashSanity().setMinMemoryKib(19_457);
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isFalse();
+        properties.getHashSanity().setMinMemoryKib(8);
+        properties.setMemoryKib(262_145);
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isFalse();
+        properties.setMemoryKib(19_456);
+        properties.getHashSanity().setMaxMemoryKib(19_455);
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isFalse();
+
+        properties.getHashSanity().setMaxMemoryKib(262_144);
+        properties.setIterations(1);
+        properties.getHashSanity().setMinIterations(2);
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isFalse();
+        properties.getHashSanity().setMinIterations(1);
+        properties.setIterations(11);
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isFalse();
+        properties.setIterations(2);
+        properties.setParallelism(0);
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isFalse();
+        properties.setParallelism(17);
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isFalse();
+        properties.setParallelism(1);
+        properties.setSaltLength(15);
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isFalse();
+        properties.setSaltLength(129);
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isFalse();
+        properties.setSaltLength(16);
+        properties.getHashSanity().setMinHashLength(33);
+        properties.setHashLength(31);
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isFalse();
+        properties.getHashSanity().setMinHashLength(16);
+        properties.setHashLength(129);
+        assertThat(properties.isConfiguredWithinHashSanityLimits()).isFalse();
+
+        var limits = new Argon2Properties.HashSanityLimits();
+        assertThat(limits.isValid()).isTrue();
+        limits.setMinIterations(11);
+        assertThat(limits.isValid()).isFalse();
+        limits.setMinIterations(1);
+        limits.setMaxIterations(0);
+        assertThat(limits.isValid()).isFalse();
+        limits.setMaxIterations(10);
+        limits.setMinParallelism(17);
+        assertThat(limits.isValid()).isFalse();
+        limits.setMinParallelism(1);
+        limits.setMaxParallelism(0);
+        assertThat(limits.isValid()).isFalse();
+        limits.setMaxParallelism(16);
+        limits.setMinSaltLength(129);
+        assertThat(limits.isValid()).isFalse();
+        limits.setMinSaltLength(16);
+        limits.setMaxSaltLength(15);
+        assertThat(limits.isValid()).isFalse();
+        limits.setMaxSaltLength(128);
+        limits.setMinHashLength(129);
+        assertThat(limits.isValid()).isFalse();
+        limits.setMinHashLength(16);
+        limits.setMaxHashLength(15);
+        assertThat(limits.isValid()).isFalse();
+
+        assertThat(hasher.verify(null, "malformed")).isFalse();
+        assertThat(hasher.needsRehash(null)).isTrue();
+        assertThatThrownBy(() -> hasher.hash(null)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void rejectsEncodedHashLengthAndEveryParsedParameterBoundary() {
+        String password = randomPassword();
+        String salt = base64Bytes(16);
+        String hash = base64Bytes(32);
+        for (String malformed : Arrays.asList(
+                "x".repeat(513),
+                encoded(7, 2, 1, salt, hash),
+                encoded(19_456, 0, 1, salt, hash),
+                encoded(19_456, 2, 0, salt, hash),
+                encoded(8, 2, 2, salt, hash),
+                encoded(19_456, 2, 1, base64Bytes(8), hash),
+                encoded(19_456, 2, 1, salt, base64Bytes(8)),
+                encoded(19_456, 2, 1, base64Bytes(130), hash),
+                encoded(19_456, 2, 1, salt, base64Bytes(130)),
+                "$argon2id$v=19$m=999999999999999999999,t=2,p=1$" + salt + "$" + hash)) {
+            assertThat(hasher.verify(password, malformed)).isFalse();
+            assertThat(hasher.needsRehash(malformed)).isTrue();
+        }
+
+        assertThat(hasher.needsRehash(encoder(19_456, 2, 2, 16, 32).encode(password))).isTrue();
+        assertThat(hasher.needsRehash(encoder(19_456, 2, 1, 24, 32).encode(password))).isTrue();
+        assertThat(hasher.needsRehash(encoder(19_456, 2, 1, 16, 40).encode(password))).isTrue();
     }
 
     @Test
