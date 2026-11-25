@@ -32,13 +32,13 @@ test('consumidor HTTP lê paginação e trata recurso ausente', async () => {
   assert.equal(problem.correlation_id, 'consumer-42');
 });
 
-test('proposta de login valida credenciais de entrada e resposta bearer', () => {
+test('login por CPF valida credenciais de entrada e resposta bearer', () => {
   const ref = name => validator(contract, { $ref: '#/components/schemas/' + name });
   const request = ref('LoginRequest');
-  assert.ok(request({ email: 'aluno@example.test', password: 'synthetic' }));
-  assert.equal(request({ email: 'invalid', password: 'synthetic' }), false);
+  assert.ok(request({ cpf: '12345678901', password: 'synthetic' }));
+  assert.equal(request({ cpf: 'invalid', password: 'synthetic' }), false);
 
   const response = ref('LoginResponse');
-  assert.ok(response({ access_token: 'synthetic', token_type: 'Bearer' }));
-  assert.equal(response({ token_type: 'Bearer' }), false);
+  assert.ok(response({ accessToken: 'synthetic', tokenType: 'Bearer', expiresIn: 900 }));
+  assert.equal(response({ tokenType: 'Bearer' }), false);
 });

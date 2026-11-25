@@ -10,8 +10,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import plataforma.auth.SecurityConfiguration;
 import plataforma.dto.PageResponse;
 import plataforma.service.UserService;
 
@@ -20,6 +22,7 @@ class CrudApiToggleTest {
 
     @Nested
     @WebMvcTest(controllers = UserController.class)
+    @Import(SecurityConfiguration.class)
     class PadraoDesligado {
 
         @Autowired
@@ -36,6 +39,7 @@ class CrudApiToggleTest {
 
     @Nested
     @WebMvcTest(controllers = UserController.class, properties = "platform.crud.api.enabled=true")
+    @Import(SecurityConfiguration.class)
     class Ligado {
 
         @Autowired
