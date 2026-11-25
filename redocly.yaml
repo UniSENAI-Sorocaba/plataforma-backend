@@ -1,0 +1,7 @@
+extends:
+  - recommended-strict
+rules:
+  info-license: off
+  no-unused-components: error
+  # Endpoints nativos do Actuator não recebem entrada nem emitem 4xx de domínio.
+  operation-4xx-response: off

@@ -1,0 +1,10 @@
+{
+  "title": "Projeto sintético de impacto",
+  "summary": "Resultado público sintético aprovado para teste.",
+  "provenance": {
+    "sourceReference": "synthetic-private-source",
+    "responsibleReference": "synthetic-responsible",
+    "periodStart": "2026-01-01",
+    "periodEnd": "2026-06-30"
+  }
+}

@@ -1,0 +1,12 @@
+[
+  { "method": "get", "path": "/actuator/health", "status": 200, "example": "up", "body": { "status": "UP", "groups": ["liveness", "readiness"] } },
+  { "method": "get", "path": "/actuator/health", "status": 503, "example": "down", "body": { "status": "DOWN", "groups": ["liveness", "readiness"] } },
+  { "method": "get", "path": "/actuator/health", "status": 503, "example": "outOfService", "body": { "status": "OUT_OF_SERVICE", "groups": ["liveness", "readiness"] } },
+  { "method": "get", "path": "/actuator/health/liveness", "status": 200, "example": "up", "body": { "status": "UP" } },
+  { "method": "get", "path": "/actuator/health/liveness", "status": 503, "example": "down", "body": { "status": "DOWN" } },
+  { "method": "get", "path": "/actuator/health/liveness", "status": 503, "example": "outOfService", "body": { "status": "OUT_OF_SERVICE" } },
+  { "method": "get", "path": "/actuator/health/readiness", "status": 200, "example": "up", "body": { "status": "UP" } },
+  { "method": "get", "path": "/actuator/health/readiness", "status": 503, "example": "down", "body": { "status": "DOWN" } },
+  { "method": "get", "path": "/actuator/health/readiness", "status": 503, "example": "outOfService", "body": { "status": "OUT_OF_SERVICE" } },
+  { "method": "get", "path": "/actuator/info", "status": 200, "example": "empty", "body": {} }
+]

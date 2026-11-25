@@ -1,0 +1,2654 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: Plataforma Digital — Backend
+  version: 0.1.0
+  description: >-
+    Contrato local das rotas operacionais e dos controllers existentes na develop.
+    As rotas de CRUD e auditoria dependem das opções de ambiente.
+    Os contratos oficiais são CONTRACT-AUTH-001,
+    CONTRACT-PI-001, CONTRACT-EXT-001 ou CONTRACT-PORTAL-001.
+servers:
+  - url: https://api.example.test
+    description: Endereço sintético; configurar a URL do ambiente no cliente.
+security: []
+tags:
+  - name: Operations
+    description: Saúde e informações técnicas sem detalhes sensíveis.
+  - name: Auditoria (somente local)
+    description: Criação manual de eventos para testes
+  - name: Auditoria
+    description: Consulta de eventos de auditoria (public.audit_event)
+paths:
+  /actuator/health:
+    get:
+      operationId: getHealth
+      summary: Consultar a saúde da aplicação
+      description: Retorna status agregado e nomes dos grupos, sem detalhes dos componentes.
+      tags: [Operations]
+      security: []
+      responses:
+        '200':
+          description: Aplicação saudável e grupos de probes disponíveis.
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              examples:
+                up:
+                  value:
+                    status: UP
+                    groups: [liveness, readiness]
+        '503':
+          description: Aplicação indisponível; formato operacional nativo do Actuator.
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              examples:
+                down:
+                  value:
+                    status: DOWN
+                    groups: [liveness, readiness]
+                outOfService:
+                  value:
+                    status: OUT_OF_SERVICE
+                    groups: [liveness, readiness]
+  /actuator/health/liveness:
+    get:
+      operationId: getLiveness
+      summary: Consultar se o processo está vivo
+      description: Probe do Spring Boot Actuator, sem detalhes internos.
+      tags: [Operations]
+      security: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Healthy'
+        '503':
+          $ref: '#/components/responses/Unhealthy'
+  /actuator/health/readiness:
+    get:
+      operationId: getReadiness
+      summary: Consultar se a aplicação aceita tráfego
+      description: Probe do Spring Boot Actuator, sem detalhes internos.
+      tags: [Operations]
+      security: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Healthy'
+        '503':
+          $ref: '#/components/responses/Unhealthy'
+  /actuator/info:
+    get:
+      operationId: getInfo
+      summary: Consultar informações públicas da aplicação
+      description: O bootstrap não publica metadados; a resposta atual é um objeto vazio.
+      tags: [Operations]
+      security: []
+      responses:
+        '200':
+          description: Nenhum metadado público configurado.
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+                additionalProperties: false
+              examples:
+                empty:
+                  value: {}
+  /api/v1/activities:
+    get:
+      tags:
+      - Atividades de extensão
+      summary: Lista atividades (paginado)
+      operationId: listActivities
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: Tamanho da página. O servidor limita o valor efetivo a 100.
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: 'Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple
+          sort criteria are supported.'
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseActivityResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    post:
+      tags:
+      - Atividades de extensão
+      summary: Cria uma atividade
+      operationId: createActivities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+      parameters:
+      - $ref: '#/components/parameters/CorrelationId'
+  /api/v1/activities/{id}:
+    delete:
+      tags:
+      - Atividades de extensão
+      summary: Exclui uma atividade
+      operationId: deleteActivities
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    get:
+      tags:
+      - Atividades de extensão
+      summary: Busca uma atividade pelo id
+      operationId: getActivities
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    put:
+      tags:
+      - Atividades de extensão
+      summary: Atualiza uma atividade
+      operationId: updateActivities
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+  /api/v1/audit-events:
+    get:
+      tags:
+      - Auditoria
+      summary: Lista eventos de auditoria com filtros opcionais e paginação
+      operationId: listAuditEvents
+      parameters:
+      - name: schemaName
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: tableName
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: operation
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - INSERT
+          - UPDATE
+          - DELETE
+      - name: recordId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: actorId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: occurredFrom
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: occurredTo
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: Tamanho da página. O servidor limita o valor efetivo a 100.
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: 'Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple
+          sort criteria are supported.'
+        required: false
+        schema:
+          type: array
+          default:
+          - occurredAt,DESC
+          items:
+            type: string
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseAuditEventResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+      security: []
+      description: Disponível quando platform.audit.api.enabled está habilitado.
+  /api/v1/audit-events/{id}:
+    get:
+      tags:
+      - Auditoria
+      summary: Busca um evento de auditoria pelo id
+      operationId: getAuditEvents
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEventResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+      security: []
+      description: Disponível quando platform.audit.api.enabled está habilitado.
+  /api/v1/boards:
+    get:
+      tags:
+      - Bancas
+      summary: Lista bancas (paginado)
+      operationId: listBoards
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: Tamanho da página. O servidor limita o valor efetivo a 100.
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: 'Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple
+          sort criteria are supported.'
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseExaminationBoardResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    post:
+      tags:
+      - Bancas
+      summary: Cria uma banca
+      operationId: createBoards
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExaminationBoardRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExaminationBoardResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+      parameters:
+      - $ref: '#/components/parameters/CorrelationId'
+  /api/v1/boards/{id}:
+    delete:
+      tags:
+      - Bancas
+      summary: Exclui uma banca
+      operationId: deleteBoards
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    get:
+      tags:
+      - Bancas
+      summary: Busca uma banca pelo id
+      operationId: getBoards
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExaminationBoardResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    put:
+      tags:
+      - Bancas
+      summary: Atualiza uma banca
+      operationId: updateBoards
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExaminationBoardRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExaminationBoardResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+  /api/v1/certificates:
+    get:
+      tags:
+      - Certificados
+      summary: Lista certificados (paginado)
+      operationId: listCertificates
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: Tamanho da página. O servidor limita o valor efetivo a 100.
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: 'Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple
+          sort criteria are supported.'
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseCertificateResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    post:
+      tags:
+      - Certificados
+      summary: Cria um certificado
+      operationId: createCertificates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CertificateRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificateResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+      parameters:
+      - $ref: '#/components/parameters/CorrelationId'
+  /api/v1/certificates/{id}:
+    delete:
+      tags:
+      - Certificados
+      summary: Exclui um certificado
+      operationId: deleteCertificates
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    get:
+      tags:
+      - Certificados
+      summary: Busca um certificado pelo id
+      operationId: getCertificates
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificateResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    put:
+      tags:
+      - Certificados
+      summary: Atualiza um certificado
+      operationId: updateCertificates
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CertificateRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificateResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+  /api/v1/enrollments:
+    get:
+      tags:
+      - Inscrições
+      summary: Lista inscrições (paginado)
+      operationId: listEnrollments
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: Tamanho da página. O servidor limita o valor efetivo a 100.
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: 'Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple
+          sort criteria are supported.'
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseEnrollmentResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    post:
+      tags:
+      - Inscrições
+      summary: Cria uma inscrição
+      operationId: createEnrollments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+      parameters:
+      - $ref: '#/components/parameters/CorrelationId'
+  /api/v1/enrollments/{id}:
+    delete:
+      tags:
+      - Inscrições
+      summary: Exclui uma inscrição
+      operationId: deleteEnrollments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    get:
+      tags:
+      - Inscrições
+      summary: Busca uma inscrição pelo id
+      operationId: getEnrollments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    put:
+      tags:
+      - Inscrições
+      summary: Atualiza uma inscrição
+      operationId: updateEnrollments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+  /api/v1/evaluations:
+    get:
+      tags:
+      - Avaliações
+      summary: Lista avaliações (paginado)
+      operationId: listEvaluations
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: Tamanho da página. O servidor limita o valor efetivo a 100.
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: 'Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple
+          sort criteria are supported.'
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseEvaluationResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    post:
+      tags:
+      - Avaliações
+      summary: Cria uma avaliação
+      operationId: createEvaluations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+      parameters:
+      - $ref: '#/components/parameters/CorrelationId'
+  /api/v1/evaluations/{id}:
+    delete:
+      tags:
+      - Avaliações
+      summary: Exclui uma avaliação
+      operationId: deleteEvaluations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    get:
+      tags:
+      - Avaliações
+      summary: Busca uma avaliação pelo id
+      operationId: getEvaluations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    put:
+      tags:
+      - Avaliações
+      summary: Atualiza uma avaliação
+      operationId: updateEvaluations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+  /api/v1/local/audit-events:
+    post:
+      tags:
+      - Auditoria (somente local)
+      summary: Registra um evento de auditoria sintético
+      operationId: createAuditEvents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordAuditEventRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEventResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível somente no perfil local.
+      parameters:
+      - $ref: '#/components/parameters/CorrelationId'
+  /api/v1/notices:
+    get:
+      tags:
+      - Editais
+      summary: Lista editais (paginado)
+      operationId: listNotices
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: Tamanho da página. O servidor limita o valor efetivo a 100.
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: 'Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple
+          sort criteria are supported.'
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseNoticeResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    post:
+      tags:
+      - Editais
+      summary: Cria um edital
+      operationId: createNotices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoticeResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+      parameters:
+      - $ref: '#/components/parameters/CorrelationId'
+  /api/v1/notices/{id}:
+    delete:
+      tags:
+      - Editais
+      summary: Exclui um edital
+      operationId: deleteNotices
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    get:
+      tags:
+      - Editais
+      summary: Busca um edital pelo id
+      operationId: getNotices
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoticeResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    put:
+      tags:
+      - Editais
+      summary: Atualiza um edital
+      operationId: updateNotices
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoticeResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+  /api/v1/project-members:
+    get:
+      tags:
+      - Membros de projeto
+      summary: Lista membros de projeto (paginado)
+      operationId: listProjectMembers
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: Tamanho da página. O servidor limita o valor efetivo a 100.
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: 'Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple
+          sort criteria are supported.'
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseProjectMemberResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    post:
+      tags:
+      - Membros de projeto
+      summary: Cria um membro de projeto
+      operationId: createProjectMembers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectMemberRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMemberResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+      parameters:
+      - $ref: '#/components/parameters/CorrelationId'
+  /api/v1/project-members/{id}:
+    delete:
+      tags:
+      - Membros de projeto
+      summary: Exclui um membro de projeto
+      operationId: deleteProjectMembers
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    get:
+      tags:
+      - Membros de projeto
+      summary: Busca um membro de projeto pelo id
+      operationId: getProjectMembers
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMemberResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    put:
+      tags:
+      - Membros de projeto
+      summary: Atualiza um membro de projeto
+      operationId: updateProjectMembers
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectMemberRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMemberResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+  /api/v1/projects:
+    get:
+      tags:
+      - Projetos
+      summary: Lista projetos (paginado)
+      operationId: listProjects
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: Tamanho da página. O servidor limita o valor efetivo a 100.
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: 'Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple
+          sort criteria are supported.'
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseProjectResponse'
+              examples:
+                empty:
+                  value:
+                    content: []
+                    page: 0
+                    size: 20
+                    totalElements: 0
+                    totalPages: 0
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    post:
+      tags:
+      - Projetos
+      summary: Cria um projeto
+      operationId: createProjects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+      parameters:
+      - $ref: '#/components/parameters/CorrelationId'
+  /api/v1/projects/{id}:
+    delete:
+      tags:
+      - Projetos
+      summary: Exclui um projeto
+      operationId: deleteProjects
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    get:
+      tags:
+      - Projetos
+      summary: Busca um projeto pelo id
+      operationId: getProjects
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    put:
+      tags:
+      - Projetos
+      summary: Atualiza um projeto
+      operationId: updateProjects
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+  /api/v1/users:
+    get:
+      tags:
+      - Usuários
+      summary: Lista usuários (paginado)
+      operationId: listUsers
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: Tamanho da página. O servidor limita o valor efetivo a 100.
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: 'Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple
+          sort criteria are supported.'
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseUserResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    post:
+      tags:
+      - Usuários
+      summary: Cria um usuário
+      operationId: createUsers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+      parameters:
+      - $ref: '#/components/parameters/CorrelationId'
+  /api/v1/users/{id}:
+    delete:
+      tags:
+      - Usuários
+      summary: Exclui um usuário
+      operationId: deleteUsers
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    get:
+      tags:
+      - Usuários
+      summary: Busca um usuário pelo id
+      operationId: getUsers
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+    put:
+      tags:
+      - Usuários
+      summary: Atualiza um usuário
+      operationId: updateUsers
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '415':
+          $ref: '#/components/responses/Problem415'
+      security: []
+      description: Disponível quando platform.crud.api.enabled está habilitado.
+components:
+  schemas:
+    Health:
+      type: object
+      description: Status operacional público do Actuator.
+      required: [status]
+      additionalProperties: false
+      properties:
+        groups:
+          type: array
+          description: Nomes públicos dos grupos de saúde, presentes no endpoint agregado.
+          uniqueItems: true
+          items:
+            type: string
+            enum: [liveness, readiness]
+        status:
+          type: string
+          enum: [UP, DOWN, OUT_OF_SERVICE, UNKNOWN]
+    UserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          minLength: 0
+        fullName:
+          type: string
+          maxLength: 255
+          minLength: 0
+        role:
+          type: string
+          enum:
+          - STUDENT
+          - PROFESSOR
+          - COORDINATOR
+          - CPA
+          - ADMIN
+        active:
+          type: boolean
+      required:
+      - active
+      - email
+      - fullName
+      - role
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        fullName:
+          type: string
+        role:
+          type: string
+          enum:
+          - STUDENT
+          - PROFESSOR
+          - COORDINATOR
+          - CPA
+          - ADMIN
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ProjectRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          minLength: 0
+        description:
+          type: string
+          minLength: 1
+        projectType:
+          type: string
+          enum:
+          - ACADEMIC_PI
+          - EXTENSION
+          - HYBRID
+        status:
+          type: string
+          enum:
+          - PROPOSED
+          - APPROVED
+          - IN_PROGRESS
+          - EVALUATED
+          - ARCHIVED
+        semester:
+          type: string
+          minLength: 1
+          pattern: \d{4}\.[12]
+        course:
+          type: string
+          maxLength: 120
+          minLength: 0
+        leaderId:
+          type: string
+          format: uuid
+        advisorId:
+          type: string
+          format: uuid
+      required:
+      - course
+      - description
+      - leaderId
+      - projectType
+      - semester
+      - status
+      - title
+    ProjectResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        projectType:
+          type: string
+          enum:
+          - ACADEMIC_PI
+          - EXTENSION
+          - HYBRID
+        status:
+          type: string
+          enum:
+          - PROPOSED
+          - APPROVED
+          - IN_PROGRESS
+          - EVALUATED
+          - ARCHIVED
+        semester:
+          type: string
+        course:
+          type: string
+        leaderId:
+          type: string
+          format: uuid
+        advisorId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ProjectMemberRequest:
+      type: object
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        memberRole:
+          type: string
+          enum:
+          - LEADER
+          - MEMBER
+        status:
+          type: string
+          enum:
+          - INVITED
+          - ACCEPTED
+          - DECLINED
+      required:
+      - memberRole
+      - projectId
+      - status
+      - userId
+    ProjectMemberResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        memberRole:
+          type: string
+          enum:
+          - LEADER
+          - MEMBER
+        status:
+          type: string
+          enum:
+          - INVITED
+          - ACCEPTED
+          - DECLINED
+        invitedAt:
+          type: string
+          format: date-time
+    NoticeRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          minLength: 0
+        description:
+          type: string
+          minLength: 1
+        startsOn:
+          type: string
+          format: date
+        endsOn:
+          type: string
+          format: date
+        totalHours:
+          type: integer
+          format: int32
+        advisorId:
+          type: string
+          format: uuid
+        active:
+          type: boolean
+      required:
+      - active
+      - advisorId
+      - description
+      - endsOn
+      - startsOn
+      - title
+      - totalHours
+    NoticeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        startsOn:
+          type: string
+          format: date
+        endsOn:
+          type: string
+          format: date
+        totalHours:
+          type: integer
+          format: int32
+        advisorId:
+          type: string
+          format: uuid
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    EvaluationRequest:
+      type: object
+      properties:
+        boardId:
+          type: string
+          format: uuid
+        evaluatorId:
+          type: string
+          format: uuid
+        technicalGrade:
+          type: number
+          maximum: 10.0
+          minimum: 0.0
+        presentationGrade:
+          type: number
+          maximum: 10.0
+          minimum: 0.0
+        artifactGrade:
+          type: number
+          maximum: 10.0
+          minimum: 0.0
+        feedback:
+          type: string
+          maxLength: 4000
+          minLength: 0
+      required:
+      - artifactGrade
+      - boardId
+      - evaluatorId
+      - presentationGrade
+      - technicalGrade
+    EvaluationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        boardId:
+          type: string
+          format: uuid
+        evaluatorId:
+          type: string
+          format: uuid
+        technicalGrade:
+          type: number
+        presentationGrade:
+          type: number
+        artifactGrade:
+          type: number
+        finalGrade:
+          type: number
+        feedback:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    EnrollmentRequest:
+      type: object
+      properties:
+        noticeId:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+      required:
+      - noticeId
+      - studentId
+    EnrollmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        noticeId:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        enrolledAt:
+          type: string
+          format: date-time
+    CertificateRequest:
+      type: object
+      properties:
+        enrollmentId:
+          type: string
+          format: uuid
+        hours:
+          type: integer
+          format: int32
+      required:
+      - enrollmentId
+      - hours
+    CertificateResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        enrollmentId:
+          type: string
+          format: uuid
+        hours:
+          type: integer
+          format: int32
+        validationHash:
+          type: string
+        issuedAt:
+          type: string
+          format: date-time
+    ExaminationBoardRequest:
+      type: object
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        scheduledAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        location:
+          type: string
+          maxLength: 255
+          minLength: 0
+        status:
+          type: string
+          enum:
+          - SCHEDULED
+          - IN_EVALUATION
+          - COMPLETED
+      required:
+      - endsAt
+      - location
+      - projectId
+      - scheduledAt
+      - status
+    ExaminationBoardResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        scheduledAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        location:
+          type: string
+        status:
+          type: string
+          enum:
+          - SCHEDULED
+          - IN_EVALUATION
+          - COMPLETED
+        finalGrade:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+    ActivityRequest:
+      type: object
+      properties:
+        enrollmentId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+          minLength: 0
+        description:
+          type: string
+          maxLength: 4000
+          minLength: 0
+        hoursRequested:
+          type: integer
+          format: int32
+        evidenceKey:
+          type: string
+          maxLength: 512
+          minLength: 0
+      required:
+      - enrollmentId
+      - evidenceKey
+      - hoursRequested
+      - title
+    ActivityResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        enrollmentId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        hoursRequested:
+          type: integer
+          format: int32
+        hoursApproved:
+          type: integer
+          format: int32
+        evidenceKey:
+          type: string
+        status:
+          type: string
+          enum:
+          - PENDING
+          - APPROVED
+          - REJECTED
+        decisionReason:
+          type: string
+        reviewerId:
+          type: string
+          format: uuid
+        submittedAt:
+          type: string
+          format: date-time
+        reviewedAt:
+          type: string
+          format: date-time
+    RecordAuditEventRequest:
+      type: object
+      properties:
+        schemaName:
+          type: string
+          maxLength: 63
+          minLength: 0
+        tableName:
+          type: string
+          maxLength: 63
+          minLength: 0
+        operation:
+          type: string
+          enum:
+          - INSERT
+          - UPDATE
+          - DELETE
+        recordId:
+          type: string
+          format: uuid
+        actorId:
+          type: string
+          format: uuid
+        oldData:
+          type: object
+          additionalProperties: {}
+        newData:
+          type: object
+          additionalProperties: {}
+      required:
+      - operation
+      - schemaName
+      - tableName
+    AuditEventResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        schemaName:
+          type: string
+        tableName:
+          type: string
+        operation:
+          type: string
+          enum:
+          - INSERT
+          - UPDATE
+          - DELETE
+        recordId:
+          type: string
+          format: uuid
+        actorId:
+          type: string
+          format: uuid
+        oldData:
+          type: object
+          additionalProperties: {}
+        newData:
+          type: object
+          additionalProperties: {}
+    PageResponseUserResponse:
+      allOf:
+      - $ref: '#/components/schemas/Pagination'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/UserResponse'
+    PageResponseProjectResponse:
+      allOf:
+      - $ref: '#/components/schemas/Pagination'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/ProjectResponse'
+    PageResponseProjectMemberResponse:
+      allOf:
+      - $ref: '#/components/schemas/Pagination'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/ProjectMemberResponse'
+    PageResponseNoticeResponse:
+      allOf:
+      - $ref: '#/components/schemas/Pagination'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/NoticeResponse'
+    PageResponseEvaluationResponse:
+      allOf:
+      - $ref: '#/components/schemas/Pagination'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/EvaluationResponse'
+    PageResponseEnrollmentResponse:
+      allOf:
+      - $ref: '#/components/schemas/Pagination'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/EnrollmentResponse'
+    PageResponseCertificateResponse:
+      allOf:
+      - $ref: '#/components/schemas/Pagination'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/CertificateResponse'
+    PageResponseExaminationBoardResponse:
+      allOf:
+      - $ref: '#/components/schemas/Pagination'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/ExaminationBoardResponse'
+    PageResponseAuditEventResponse:
+      allOf:
+      - $ref: '#/components/schemas/Pagination'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/AuditEventResponse'
+    PageResponseActivityResponse:
+      allOf:
+      - $ref: '#/components/schemas/Pagination'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/ActivityResponse'
+    CorrelationId:
+      type: string
+      pattern: ^[A-Za-z0-9._-]{1,64}$
+    ProblemDetail:
+      type: object
+      required:
+      - type
+      - title
+      - status
+      - detail
+      - code
+      - message
+      - correlation_id
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        code:
+          type: string
+        message:
+          type: string
+        correlation_id:
+          $ref: '#/components/schemas/CorrelationId'
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+    Pagination:
+      type: object
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+      properties:
+        content:
+          type: array
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        totalElements:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+    LoginRequest:
+      description: Proposta para integração com CONTRACT-AUTH-001, sujeita à aprovação.
+      type: object
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          writeOnly: true
+    LoginResponse:
+      description: Proposta para CONTRACT-AUTH-001. O refresh token é transportado em cookie seguro conforme ADR-003.
+      type: object
+      required:
+      - access_token
+      - token_type
+      properties:
+        access_token:
+          type: string
+          description: Access token JWT assinado com RS256.
+        token_type:
+          type: string
+          const: Bearer
+  headers:
+    CorrelationId:
+      description: Identificador de correlação da requisição.
+      schema:
+        $ref: '#/components/schemas/CorrelationId'
+  parameters:
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      description: Identificador opcional. A aplicação gera outro quando ausente ou inválido.
+      schema:
+        $ref: '#/components/schemas/CorrelationId'
+  responses:
+    Problem400:
+      description: Requisição inválida.
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    Problem404:
+      description: Recurso não encontrado.
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          examples:
+            notFound:
+              value:
+                type: https://errors.plataforma.senai.br/not_found
+                title: Recurso não encontrado
+                status: 404
+                detail: Resource not found
+                code: NOT_FOUND
+                message: Resource not found
+                correlation_id: consumer-42
+    Problem409:
+      description: Conflito com o estado atual.
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    Problem415:
+      description: Content-Type incompatível.
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    Healthy:
+      description: Aplicação saudável.
+      content:
+        application/vnd.spring-boot.actuator.v3+json:
+          schema:
+            $ref: '#/components/schemas/Health'
+          examples:
+            up:
+              value:
+                status: UP
+    Unhealthy:
+      description: Aplicação indisponível; formato operacional nativo do Actuator.
+      content:
+        application/vnd.spring-boot.actuator.v3+json:
+          schema:
+            $ref: '#/components/schemas/Health'
+          examples:
+            down:
+              value:
+                status: DOWN
+            outOfService:
+              value:
+                status: OUT_OF_SERVICE
+x-proposed-auth-schemas:
+  request:
+    $ref: '#/components/schemas/LoginRequest'
+  response:
+    $ref: '#/components/schemas/LoginResponse'

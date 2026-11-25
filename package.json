@@ -1,0 +1,21 @@
+{
+  "name": "plataforma-backend-contracts",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.14.0 <25" },
+  "scripts": {
+    "contracts:lint": "node tools/contracts/run-cli.mjs lint",
+    "contracts:bundle": "node tools/contracts/run-cli.mjs bundle",
+    "contracts:test": "node --test tools/contracts/*.test.mjs",
+    "contracts:verify": "npm run contracts:lint && npm run contracts:bundle && npm run contracts:test",
+    "contracts:mock": "node tools/contracts/mock.mjs",
+    "contracts:install-diff": "node tools/contracts/install-oasdiff.mjs",
+    "contracts:breaking": "node tools/contracts/breaking.mjs",
+    "spec-compliance": "node tools/contracts/spec-compliance.mjs"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.71.2",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  }
+}

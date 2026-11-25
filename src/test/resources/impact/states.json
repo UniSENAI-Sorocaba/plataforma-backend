@@ -1,0 +1,6 @@
+{
+  "draft": {"version": 1, "approved": false, "withdrawn": false, "publicStatus": 404},
+  "approved": {"version": 1, "approved": true, "withdrawn": false, "publicStatus": 404},
+  "published": {"version": 1, "approved": true, "withdrawn": false, "publicStatus": 200},
+  "withdrawn": {"version": 1, "approved": false, "withdrawn": true, "publicStatus": 404}
+}

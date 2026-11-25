@@ -1,0 +1,1635 @@
+{
+  "openapi": "3.1.0",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "BE-019 — API local de impacto",
+    "version": "0.2.0",
+    "description": "Proposta executável local para revisão; não substitui CONTRACT-PORTAL-001 ou aprovação de PG-012. Conteúdo público mínimo textual, sem métricas institucionais inventadas."
+  },
+  "x-governance-status": "proposed-local",
+  "servers": [
+    {
+      "url": "https://api.example.test",
+      "description": "Endereço sintético; usar o endereço do ambiente."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Impact",
+      "description": "Versionamento e publicação de impacto"
+    }
+  ],
+  "paths": {
+    "/api/v1/impacts": {
+      "post": {
+        "operationId": "createImpact",
+        "summary": "createImpact",
+        "tags": [
+          "Impact"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-permission": "CREATE",
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftInput"
+              },
+              "examples": {
+                "synthetic": {
+                  "value": {
+                    "title": "Projeto sintético de impacto",
+                    "summary": "Resultado público sintético aprovado para teste.",
+                    "provenance": {
+                      "sourceReference": "synthetic-private-source",
+                      "responsibleReference": "synthetic-responsible",
+                      "periodStart": "2026-01-01",
+                      "periodEnd": "2026-06-30"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Resultado da operação",
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementResponse"
+                },
+                "examples": {
+                  "synthetic": {
+                    "value": {
+                      "id": "00000000-0000-0000-0000-000000000001",
+                      "revision": 1,
+                      "publishedVersion": null,
+                      "latestVersion": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/v1/impacts/{id}/versions": {
+      "post": {
+        "operationId": "reviseImpact",
+        "summary": "reviseImpact",
+        "tags": [
+          "Impact"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-permission": "REVISE",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftInput"
+              },
+              "examples": {
+                "synthetic": {
+                  "value": {
+                    "title": "Projeto sintético de impacto",
+                    "summary": "Resultado público sintético aprovado para teste.",
+                    "provenance": {
+                      "sourceReference": "synthetic-private-source",
+                      "responsibleReference": "synthetic-responsible",
+                      "periodStart": "2026-01-01",
+                      "periodEnd": "2026-06-30"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultado da operação",
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementResponse"
+                },
+                "examples": {
+                  "synthetic": {
+                    "value": {
+                      "id": "00000000-0000-0000-0000-000000000001",
+                      "revision": 1,
+                      "publishedVersion": null,
+                      "latestVersion": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error412"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error428"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      },
+      "get": {
+        "operationId": "readImpactVersions",
+        "summary": "readImpactVersions",
+        "tags": [
+          "Impact"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-permission": "READ",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado da operação",
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionsPage"
+                },
+                "examples": {
+                  "synthetic": {
+                    "value": {
+                      "page": 0,
+                      "size": 25,
+                      "totalElements": 1,
+                      "content": [
+                        {
+                          "version": 1,
+                          "title": "Projeto sintético de impacto",
+                          "summary": "Resultado público sintético aprovado para teste.",
+                          "approved": false,
+                          "withdrawn": false
+                        }
+                      ],
+                      "totalPages": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/v1/impacts/{id}/versions/{version}/approval": {
+      "post": {
+        "operationId": "approveImpact",
+        "summary": "approveImpact",
+        "tags": [
+          "Impact"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-permission": "APPROVE",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado da operação",
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementResponse"
+                },
+                "examples": {
+                  "synthetic": {
+                    "value": {
+                      "id": "00000000-0000-0000-0000-000000000001",
+                      "revision": 1,
+                      "publishedVersion": null,
+                      "latestVersion": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error412"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error428"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/v1/impacts/{id}/publication": {
+      "put": {
+        "operationId": "publishImpact",
+        "summary": "publishImpact",
+        "tags": [
+          "Impact"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-permission": "PUBLISH",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicationInput"
+              },
+              "examples": {
+                "synthetic": {
+                  "value": {
+                    "version": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultado da operação",
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementResponse"
+                },
+                "examples": {
+                  "synthetic": {
+                    "value": {
+                      "id": "00000000-0000-0000-0000-000000000001",
+                      "revision": 1,
+                      "publishedVersion": null,
+                      "latestVersion": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error412"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error428"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "withdrawImpact",
+        "summary": "withdrawImpact",
+        "tags": [
+          "Impact"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-permission": "WITHDRAW",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado da operação",
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementResponse"
+                },
+                "examples": {
+                  "synthetic": {
+                    "value": {
+                      "id": "00000000-0000-0000-0000-000000000001",
+                      "revision": 1,
+                      "publishedVersion": null,
+                      "latestVersion": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error412"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error428"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "description": "Retira a versão publicada e exige uma nova aprovação para republicá-la.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawalInput"
+              },
+              "examples": {
+                "synthetic": {
+                  "value": {
+                    "reason": "Correção de dados sintéticos"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/impacts/{id}": {
+      "get": {
+        "operationId": "readPublicImpact",
+        "summary": "readPublicImpact",
+        "tags": [
+          "Impact"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado da operação",
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicResponse"
+                },
+                "examples": {
+                  "synthetic": {
+                    "value": {
+                      "id": "00000000-0000-0000-0000-000000000001",
+                      "version": 1,
+                      "title": "Projeto sintético de impacto",
+                      "summary": "Resultado público sintético aprovado para teste."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/v1/impacts/{id}/versions/{version}/provenance": {
+      "get": {
+        "operationId": "readImpactProvenance",
+        "summary": "readImpactProvenance",
+        "tags": [
+          "Impact"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-permission": "AUDIT",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado da operação",
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvenanceResponse"
+                },
+                "examples": {
+                  "synthetic": {
+                    "value": {
+                      "id": "00000000-0000-0000-0000-000000000001",
+                      "version": 1,
+                      "sourceReference": "synthetic-private-source",
+                      "responsibleReference": "synthetic-responsible",
+                      "periodStart": "2026-01-01",
+                      "periodEnd": "2026-06-30",
+                      "createdBy": "synthetic-editor",
+                      "createdAt": "2026-10-28T00:00:00Z",
+                      "approvedBy": null,
+                      "approvedAt": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/v1/impacts/{id}/history": {
+      "get": {
+        "operationId": "readImpactHistory",
+        "summary": "readImpactHistory",
+        "tags": [
+          "Impact"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-permission": "AUDIT",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado da operação",
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResponse"
+                },
+                "examples": {
+                  "synthetic": {
+                    "value": {
+                      "page": 0,
+                      "size": 25,
+                      "totalElements": 1,
+                      "content": [
+                        {
+                          "impactId": "00000000-0000-0000-0000-000000000001",
+                          "revision": 1,
+                          "action": "CREATE",
+                          "version": 1,
+                          "actor": "synthetic-editor",
+                          "at": "2026-10-28T00:00:00Z",
+                          "correlationId": "synthetic-correlation",
+                          "result": "SUCCESS"
+                        }
+                      ],
+                      "totalPages": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Identidade validada por BE-004; esta API não emite nem valida JWT sem o adapter."
+      }
+    },
+    "schemas": {
+      "DraftInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "summary",
+          "provenance"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/ProvenanceInput"
+          }
+        }
+      },
+      "ProvenanceInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sourceReference",
+          "responsibleReference",
+          "periodStart",
+          "periodEnd"
+        ],
+        "properties": {
+          "sourceReference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "responsibleReference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "PublicationInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "PublicResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "title",
+          "summary"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          }
+        }
+      },
+      "VersionResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "title",
+          "summary",
+          "approved",
+          "withdrawn"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "approved": {
+            "type": "boolean"
+          },
+          "withdrawn": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ManagementResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "publishedVersion",
+          "latestVersion"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "publishedVersion": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "latestVersion": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "ProvenanceResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "sourceReference",
+          "responsibleReference",
+          "periodStart",
+          "periodEnd",
+          "createdBy",
+          "createdAt",
+          "approvedBy",
+          "approvedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sourceReference": {
+            "type": "string"
+          },
+          "responsibleReference": {
+            "type": "string"
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approvedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "approvedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "HistoryResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "content",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "totalElements": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "revision",
+                "action",
+                "version",
+                "actor",
+                "at",
+                "correlationId",
+                "impactId",
+                "result"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer"
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "CREATE",
+                    "REVISE",
+                    "APPROVE",
+                    "PUBLISH",
+                    "WITHDRAW"
+                  ]
+                },
+                "version": {
+                  "type": "integer"
+                },
+                "actor": {
+                  "type": "string"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "correlationId": {
+                  "type": "string"
+                },
+                "impactId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "result": {
+                  "type": "string",
+                  "const": "SUCCESS"
+                },
+                "withdrawalReason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 512
+                }
+              }
+            }
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "code",
+          "message",
+          "correlation_id"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "correlation_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "VersionsPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "content",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "totalElements": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VersionResponse"
+            }
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "WithdrawalInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "\\S",
+            "description": "Motivo registrado no histórico restrito de auditoria."
+          }
+        }
+      }
+    },
+    "responses": {
+      "Error400": {
+        "description": "Erro 400 RFC 9457",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "examples": {
+              "synthetic": {
+                "value": {
+                  "type": "https://errors.plataforma.senai.br/validation_error",
+                  "title": "Erro de requisição",
+                  "status": 400,
+                  "detail": "Mensagem pública sanitizada",
+                  "correlation_id": "synthetic-correlation",
+                  "code": "VALIDATION_ERROR",
+                  "message": "Mensagem pública sanitizada"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error401": {
+        "description": "Erro 401 RFC 9457",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "examples": {
+              "synthetic": {
+                "value": {
+                  "type": "https://errors.plataforma.senai.br/unauthenticated",
+                  "title": "Erro de requisição",
+                  "status": 401,
+                  "detail": "Mensagem pública sanitizada",
+                  "correlation_id": "synthetic-correlation",
+                  "code": "UNAUTHENTICATED",
+                  "message": "Mensagem pública sanitizada"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error403": {
+        "description": "Erro 403 RFC 9457",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "examples": {
+              "synthetic": {
+                "value": {
+                  "type": "https://errors.plataforma.senai.br/forbidden",
+                  "title": "Erro de requisição",
+                  "status": 403,
+                  "detail": "Mensagem pública sanitizada",
+                  "correlation_id": "synthetic-correlation",
+                  "code": "FORBIDDEN",
+                  "message": "Mensagem pública sanitizada"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error404": {
+        "description": "Erro 404 RFC 9457",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "examples": {
+              "synthetic": {
+                "value": {
+                  "type": "https://errors.plataforma.senai.br/not_found",
+                  "title": "Erro de requisição",
+                  "status": 404,
+                  "detail": "Mensagem pública sanitizada",
+                  "correlation_id": "synthetic-correlation",
+                  "code": "NOT_FOUND",
+                  "message": "Mensagem pública sanitizada"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error409": {
+        "description": "Erro 409 RFC 9457",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "examples": {
+              "synthetic": {
+                "value": {
+                  "type": "https://errors.plataforma.senai.br/conflict",
+                  "title": "Erro de requisição",
+                  "status": 409,
+                  "detail": "Mensagem pública sanitizada",
+                  "correlation_id": "synthetic-correlation",
+                  "code": "CONFLICT",
+                  "message": "Mensagem pública sanitizada"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error503": {
+        "description": "Erro 503 RFC 9457",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "examples": {
+              "synthetic": {
+                "value": {
+                  "type": "https://errors.plataforma.senai.br/impact_unavailable",
+                  "title": "Erro de requisição",
+                  "status": 503,
+                  "detail": "Mensagem pública sanitizada",
+                  "correlation_id": "synthetic-correlation",
+                  "code": "IMPACT_UNAVAILABLE",
+                  "message": "Mensagem pública sanitizada"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error412": {
+        "description": "Erro 412 RFC 9457",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "examples": {
+              "synthetic": {
+                "value": {
+                  "type": "https://errors.plataforma.senai.br/precondition_failed",
+                  "title": "Erro de requisição",
+                  "status": 412,
+                  "detail": "Mensagem pública sanitizada",
+                  "correlation_id": "synthetic-correlation",
+                  "code": "PRECONDITION_FAILED",
+                  "message": "Mensagem pública sanitizada"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error428": {
+        "description": "Erro 428 RFC 9457",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "examples": {
+              "synthetic": {
+                "value": {
+                  "type": "https://errors.plataforma.senai.br/precondition_required",
+                  "title": "Erro de requisição",
+                  "status": 428,
+                  "detail": "Mensagem pública sanitizada",
+                  "correlation_id": "synthetic-correlation",
+                  "code": "PRECONDITION_REQUIRED",
+                  "message": "Mensagem pública sanitizada"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
