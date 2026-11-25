@@ -1,4 +1,5 @@
 [
+  {"method": "POST", "path": "/api/v1/auth/login", "publicAccess": true},
   {"method": "POST", "path": "/api/v1/activities", "publicAccess": false, "action": "activities:create", "resource": "activities"},
   {"method": "GET", "path": "/api/v1/activities", "publicAccess": false, "action": "activities:list", "resource": "activities"},
   {"method": "GET", "path": "/api/v1/activities/{id}", "publicAccess": false, "action": "activities:read", "resourceVariable": "id"},

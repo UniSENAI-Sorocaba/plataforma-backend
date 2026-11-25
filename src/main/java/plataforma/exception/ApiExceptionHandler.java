@@ -22,6 +22,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import plataforma.config.CorrelationIdFilter;
 import plataforma.auth.passwordrecovery.InvalidPasswordRecoveryTokenException;
 import plataforma.security.SecretRedactor;
+import plataforma.auth.AuthenticationRateLimitException;
 
 /** RFC 9457 errors that retain request correlation and do not expose internal payloads. */
 @RestControllerAdvice
@@ -55,6 +56,14 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     ResponseEntity<ProblemDetail> authentication(AuthenticationException ex, HttpServletRequest request) {
         return response(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "Authentication is required", request);
+    }
+
+    @ExceptionHandler(AuthenticationRateLimitException.class)
+    ResponseEntity<ProblemDetail> authenticationRateLimited(
+            AuthenticationRateLimitException ex,
+            HttpServletRequest request
+    ) {
+        return response(HttpStatus.TOO_MANY_REQUESTS, "TOO_MANY_REQUESTS", "Authentication is required", request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -126,6 +135,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             case 405 -> "Método não permitido";
             case 409 -> "Conflito";
             case 415 -> "Tipo de conteúdo não suportado";
+            case 429 -> "Muitas tentativas";
             default -> "Erro na requisição";
         };
     }
