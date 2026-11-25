@@ -19,6 +19,8 @@ tags:
     description: Criação manual de eventos para testes
   - name: Auditoria
     description: Consulta de eventos de auditoria (public.audit_event)
+  - name: Authentication
+    description: Login institucional por CPF e emissão de access token.
 paths:
   /actuator/health:
     get:
@@ -96,6 +98,36 @@ paths:
               examples:
                 empty:
                   value: {}
+  /api/v1/auth/login:
+    post:
+      operationId: loginInstitutionalUser
+      summary: Autenticar usuário institucional por CPF
+      tags: [Authentication]
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login válido; retorna access token RS256.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '401':
+          $ref: '#/components/responses/Problem401'
+        '429':
+          $ref: '#/components/responses/Problem429'
+      security: []
   /api/v1/activities:
     get:
       tags:
@@ -2539,32 +2571,36 @@ components:
           type: integer
           minimum: 0
     LoginRequest:
-      description: Proposta para integração com CONTRACT-AUTH-001, sujeita à aprovação.
+      description: Credenciais institucionais; CPF deve conter onze dígitos.
       type: object
       required:
-      - email
+      - cpf
       - password
       properties:
-        email:
+        cpf:
           type: string
-          format: email
+          pattern: ^\d{11}$
         password:
           type: string
           format: password
           writeOnly: true
     LoginResponse:
-      description: Proposta para CONTRACT-AUTH-001. O refresh token é transportado em cookie seguro conforme ADR-003.
+      description: Access token emitido pelo login. Refresh e revogação pertencem ao fluxo de sessão da BE-006.
       type: object
       required:
-      - access_token
-      - token_type
+      - accessToken
+      - tokenType
+      - expiresIn
       properties:
-        access_token:
+        accessToken:
           type: string
           description: Access token JWT assinado com RS256.
-        token_type:
+        tokenType:
           type: string
           const: Bearer
+        expiresIn:
+          type: integer
+          const: 900
   headers:
     CorrelationId:
       description: Identificador de correlação da requisição.
@@ -2580,6 +2616,24 @@ components:
   responses:
     Problem400:
       description: Requisição inválida.
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    Problem401:
+      description: Credenciais inválidas ou ausência de autenticação.
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    Problem429:
+      description: Tentativas de autenticação excederam o limite temporário.
       headers:
         X-Correlation-Id:
           $ref: '#/components/headers/CorrelationId'
