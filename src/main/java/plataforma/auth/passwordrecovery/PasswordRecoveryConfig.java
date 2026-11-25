@@ -25,8 +25,12 @@ public class PasswordRecoveryConfig {
     @Bean
     @Profile("!test")
     PasswordRecoveryTokenRepository passwordRecoveryTokenRepository(
-            PasswordRecoveryTokenJpaRepository repository) {
-        return new JpaPasswordRecoveryTokenRepository(repository);
+            org.springframework.beans.factory.ObjectProvider<PasswordRecoveryTokenJpaRepository> repositoryProvider) {
+        PasswordRecoveryTokenJpaRepository repository = repositoryProvider.getIfAvailable();
+        if (repository != null) {
+            return new JpaPasswordRecoveryTokenRepository(repository);
+        }
+        return new InMemoryPasswordRecoveryTokenRepository();
     }
 
     @Bean

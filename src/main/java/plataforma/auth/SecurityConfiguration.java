@@ -2,16 +2,21 @@ package plataforma.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import java.security.Principal;
+import java.util.Collections;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 import plataforma.exception.ApiExceptionHandler;
 
 @Configuration(proxyBeanMethods = false)
@@ -28,7 +33,19 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .formLogin(AbstractHttpConfigurer::disable);
+                .formLogin(AbstractHttpConfigurer::disable)
+                .addFilterBefore((request, response, chain) -> {
+                    HttpServletRequest httpRequest = (HttpServletRequest) request;
+                    if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                        Principal principal = httpRequest.getUserPrincipal();
+                        if (principal != null) {
+                            SecurityContextHolder.getContext().setAuthentication(
+                                    new UsernamePasswordAuthenticationToken(principal, null, Collections.emptyList())
+                            );
+                        }
+                    }
+                    chain.doFilter(request, response);
+                }, SecurityContextHolderAwareRequestFilter.class);
 
         if (decoder != null) {
             http.oauth2ResourceServer(oauth -> oauth
