@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import plataforma.dto.PageResponse;
+import plataforma.dto.ProjectMemberRemovalRequest;
 import plataforma.dto.ProjectMemberRequest;
 import plataforma.dto.ProjectMemberResponse;
 import plataforma.service.ProjectMemberService;
@@ -61,8 +62,8 @@ public class ProjectMemberController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Exclui um membro de projeto")
-    public void delete(@PathVariable UUID id) {
-        service.delete(id);
+    @Operation(summary = "Remove um participante com justificativa")
+    public void delete(@PathVariable UUID id, @Valid @RequestBody ProjectMemberRemovalRequest request) {
+        service.delete(id, request.justification());
     }
 }
